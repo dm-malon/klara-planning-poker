@@ -70,6 +70,27 @@ npm run dev                  # http://localhost:3000
    reaches the browser. Searches use `rating=pg-13`, and a random pick comes from the top 25 results,
    skipping GIFs already shown in the session.
 
+## Keep Supabase awake
+
+Free Supabase projects pause after about 7 days without **database** activity, and this app
+otherwise only uses Realtime. To prevent that, a Vercel Cron job (`vercel.json`, daily at 08:00
+UTC) calls `/api/keepalive`, which runs one trivial query.
+
+One-time setup:
+
+1. In Supabase, open **SQL Editor** and run:
+   ```sql
+   create or replace function public.ping() returns text
+     language sql stable as $$ select 'pong' $$;
+   grant execute on function public.ping() to anon;
+   ```
+2. In Vercel, set `CRON_SECRET` to any random string (Production + Preview). Vercel Cron sends
+   it automatically, and other callers get `401`.
+
+To check it, run `curl -H "Authorization: Bearer $CRON_SECRET" https://<your-app>/api/keepalive`,
+which should return `{"ok":true,...}`. If the server is unreachable anyway, rooms show a "server
+is unavailable, please contact the admin" message and reconnect by themselves once it's back.
+
 ## Deploy to Vercel
 
 1. Push this folder to a GitHub/GitLab/Bitbucket repo.

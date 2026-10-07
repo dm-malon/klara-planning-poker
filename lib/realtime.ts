@@ -299,6 +299,7 @@ function writeVote(
 }
 
 const HOST_GRACE_MS = 3500;
+const CONNECT_TIMEOUT_MS = 12000;
 const LEAVE_TOAST_DELAY_MS = 2500;
 
 /* ------------------------------------------------------------------- hook */
@@ -367,10 +368,28 @@ export function useRoom(roomId: string, identity: Identity | null) {
     let known = new Map<string, string>();
     const quietUntil = Date.now() + 2000;
 
+    // A paused or unreachable server often just hangs, so a slow connect counts as an error.
+    // The transport keeps retrying; reaching "online" later clears it.
+    let online = false;
+    let bootTimers: ReturnType<typeof setTimeout>[] = [];
+    const slowTimer = setTimeout(() => {
+      if (!online) setStatus("error");
+    }, CONNECT_TIMEOUT_MS);
+
     const handlers: TransportHandlers = {
       onStatus(s) {
+        online = s === "online";
         setStatus(s);
-        if (s === "online") t.send("request-state", { from: myId });
+        if (s !== "online") return;
+        t.send("request-state", { from: myId });
+        // Only once connected: if nobody answers with state, this is a fresh room.
+        // (Before, an unreachable server made us invent an empty offline room.)
+        if (!bootTimers.length) {
+          bootTimers = [
+            setTimeout(() => bootstrap(false), 1500),
+            setTimeout(() => bootstrap(true), 4500),
+          ];
+        }
       },
       onSync(list) {
         const ids = new Map(list.map((p) => [p.id, p.name]));
@@ -442,12 +461,10 @@ export function useRoom(roomId: string, identity: Identity | null) {
       if (!force && others.length) return;
       applyState(initialState(myId));
     };
-    const b1 = setTimeout(() => bootstrap(false), 1500);
-    const b2 = setTimeout(() => bootstrap(true), 4500);
 
     return () => {
-      clearTimeout(b1);
-      clearTimeout(b2);
+      clearTimeout(slowTimer);
+      bootTimers.forEach(clearTimeout);
       leaveTimers.forEach(clearTimeout);
       t.close();
       transport.current = null;

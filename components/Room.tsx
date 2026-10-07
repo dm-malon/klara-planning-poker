@@ -24,6 +24,7 @@ import { PokerTable } from "./PokerTable";
 import { ReactionBar } from "./ReactionBar";
 import { Results } from "./Results";
 import { RoomHeader } from "./RoomHeader";
+import { ConnectionLost, ServerDown } from "./ServerDown";
 
 const perTab = realtimeMode === "local";
 
@@ -232,6 +233,8 @@ export function Room({ roomId }: { roomId: string }) {
           </p>
         )}
 
+        {state && room.status === "error" && <ConnectionLost />}
+
         {state && identity && me ? (
           <>
             {isHost && (
@@ -281,7 +284,10 @@ export function Room({ roomId }: { roomId: string }) {
             </div>
           </>
         ) : (
-          !needsName && (
+          !needsName &&
+          (room.status === "error" ? (
+            <ServerDown />
+          ) : (
             <div className="grid flex-1 place-items-center">
               <div className="flex flex-col items-center gap-4 text-muted">
                 <div className="flex gap-2">
@@ -301,14 +307,10 @@ export function Room({ roomId }: { roomId: string }) {
                     />
                   ))}
                 </div>
-                <p className="font-display font-bold">
-                  {room.status === "error"
-                    ? "Can't reach the table. Retrying…"
-                    : "Shuffling the deck…"}
-                </p>
+                <p className="font-display font-bold">Shuffling the deck…</p>
               </div>
             </div>
-          )
+          ))
         )}
       </main>
 

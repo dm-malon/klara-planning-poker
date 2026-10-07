@@ -57,4 +57,10 @@ There's no test suite yet. Check behaviour by opening one room in several tabs.
 - Wrap every browser-storage access in try/catch, and guard it for SSR (`typeof window`).
 - Keep things accessible: proper roles/aria on interactive elements and visible focus. Every card
   must stay keyboard-selectable.
-- Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `GIPHY_API_KEY`. See `.env.example`.
+- Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `GIPHY_API_KEY`, and
+  `CRON_SECRET` (Vercel only, guards `/api/keepalive`). See `.env.example`.
+- Keep-alive: Vercel Cron calls `/api/keepalive` daily, which calls the Supabase SQL function
+  `public.ping()` so the free project isn't paused. The SQL is in the README.
+- Connection failures: `useRoom` reports `status: "error"` after `CONNECT_TIMEOUT_MS` or on a
+  channel error. `Room` then shows `ServerDown`, or `ConnectionLost` mid-session. A room is only
+  bootstrapped after connecting, never offline.
