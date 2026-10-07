@@ -6,6 +6,7 @@ import { useState } from "react";
 import { generateRoomId, parseRoomInput } from "@/lib/roomId";
 import { realtimeMode } from "@/lib/realtime";
 import { ThemeToggle } from "./ThemeToggle";
+import { Avatar } from "./Avatar";
 import { Wordmark } from "./Wordmark";
 
 const FAN: {
@@ -15,10 +16,17 @@ const FAN: {
   y: number;
   back?: boolean;
 }[] = [
-  { label: "3", rotate: -14, x: -120, y: 26 },
-  { label: "5", rotate: -5, x: -42, y: 6 },
-  { label: "8", rotate: 5, x: 42, y: 6, back: true },
-  { label: "☕", rotate: 14, x: 120, y: 26 },
+  { label: "3", rotate: -12, x: -126, y: 10 },
+  { label: "5", rotate: -4, x: -42, y: 0 },
+  { label: "8", rotate: 4, x: 42, y: 0, back: true },
+  { label: "13", rotate: 12, x: 126, y: 10 },
+];
+
+const SEATS = [
+  { name: "Olena K", left: "50%", top: "6%" },
+  { name: "Max", left: "4%", top: "50%" },
+  { name: "Taras B", left: "96%", top: "50%" },
+  { name: "Iryna", left: "50%", top: "94%" },
 ];
 
 export function Landing() {
@@ -55,7 +63,7 @@ export function Landing() {
             className="mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-muted shadow-soft"
           >
             <span className="size-1.5 rounded-full bg-good" /> Real-time
-            estimation, with memes
+            estimation for agile teams
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -75,8 +83,8 @@ export function Landing() {
             transition={{ delay: 0.2 }}
             className="mt-6 max-w-md text-lg text-muted"
           >
-            Pick a card, flip together, argue about the outliers — and get a
-            meme for every reveal. No sign-up.
+            Pick a card, flip together, talk through the outliers. No sign-up,
+            no setup — just share a link.
           </motion.p>
 
           <motion.div
@@ -152,38 +160,57 @@ export function Landing() {
           )}
         </div>
 
-        <div className="relative hidden h-[420px] lg:block" aria-hidden>
-          <div className="table-surface absolute inset-x-0 top-24 bottom-10 rounded-full" />
+        <div
+          className="relative mx-auto hidden aspect-[1.55/1] w-full max-w-[560px] lg:block"
+          aria-hidden
+        >
+          <div className="table-surface absolute inset-x-[10%] inset-y-[17%] rounded-full" />
+
+          {SEATS.map((seat, i) => (
+            <motion.div
+              key={seat.name}
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{
+                delay: 0.5 + i * 0.08,
+                type: "spring",
+                stiffness: 220,
+                damping: 18,
+              }}
+              className="absolute -translate-x-1/2 -translate-y-1/2"
+              style={{ left: seat.left, top: seat.top }}
+            >
+              <Avatar name={seat.name} />
+            </motion.div>
+          ))}
+
           <div className="absolute inset-0 grid place-items-center">
-            <div className="relative h-44 w-32">
+            <div className="relative h-36 w-[6.5rem]">
               {FAN.map((c, i) => (
                 <motion.div
                   key={c.label}
-                  initial={{ opacity: 0, y: 80, rotate: 0, x: 0 }}
-                  animate={{
-                    opacity: 1,
-                    y: c.y - 30,
-                    rotate: c.rotate,
-                    x: c.x,
-                  }}
-                  whileHover={{ y: c.y - 54 }}
+                  initial={{ opacity: 0, y: 60, rotate: 0, x: 0 }}
+                  animate={{ opacity: 1, y: c.y, rotate: c.rotate, x: c.x }}
+                  whileHover={{ y: c.y - 16 }}
                   transition={{
-                    delay: 0.25 + i * 0.08,
+                    delay: 0.2 + i * 0.08,
                     type: "spring",
-                    stiffness: 140,
-                    damping: 16,
+                    stiffness: 160,
+                    damping: 18,
                   }}
-                  className={`gloss absolute inset-0 rounded-2xl ${c.back ? "card-back" : "card-face"}`}
+                  className={`gloss absolute inset-0 rounded-2xl shadow-[0_18px_36px_-14px_rgba(12,12,20,0.35)] ${
+                    c.back ? "card-back" : "card-face"
+                  }`}
                 >
                   {!c.back && (
                     <>
-                      <span className="absolute top-2 left-3 font-display text-lg font-bold">
+                      <span className="absolute top-2 left-2.5 font-display text-sm font-bold">
                         {c.label}
                       </span>
-                      <span className="absolute inset-0 grid place-items-center font-display text-6xl font-bold">
+                      <span className="absolute inset-0 grid place-items-center font-display text-5xl font-bold">
                         {c.label}
                       </span>
-                      <span className="absolute right-3 bottom-2 rotate-180 font-display text-lg font-bold">
+                      <span className="absolute right-2.5 bottom-2 rotate-180 font-display text-sm font-bold">
                         {c.label}
                       </span>
                     </>

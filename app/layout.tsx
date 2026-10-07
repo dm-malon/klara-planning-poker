@@ -15,7 +15,7 @@ const mono = Geist_Mono({ variable: "--font-mono", subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "KLARA PLANNING POKER",
   description:
-    "Real-time planning poker with memes. Estimate together, laugh together.",
+    "Real-time planning poker for agile teams. Estimate together, no sign-up.",
 };
 
 export const viewport: Viewport = {
