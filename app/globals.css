@@ -1,0 +1,233 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ---------------------------------------------------------------- tokens */
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a0c18;
+  --bg-glow-1: rgba(79, 70, 229, 0.28);
+  --bg-glow-2: rgba(16, 185, 129, 0.16);
+  --surface: rgba(255, 255, 255, 0.045);
+  --surface-strong: #151831;
+  --surface-raised: #1c2040;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --text: #eef0ff;
+  --muted: #a3a8cc;
+  --faint: #6b7099;
+  --accent: #f7c948;
+  --accent-ink: #231a00;
+  --accent-soft: rgba(247, 201, 72, 0.14);
+  --good: #34d399;
+  --low: #38bdf8;
+  --high: #fb7185;
+
+  --felt-1: #0e6b52;
+  --felt-2: #0b3f4a;
+  --felt-3: #1b2466;
+  --rail-1: #2b1a12;
+  --rail-2: #4a2c1b;
+
+  --card-face: #fbf8f1;
+  --card-ink: #171a33;
+  --card-back-1: #4f46e5;
+  --card-back-2: #c026d3;
+  --shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.7);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f3efe6;
+  --bg-glow-1: rgba(99, 102, 241, 0.16);
+  --bg-glow-2: rgba(16, 185, 129, 0.14);
+  --surface: rgba(255, 255, 255, 0.7);
+  --surface-strong: #ffffff;
+  --surface-raised: #ffffff;
+  --line: rgba(23, 26, 51, 0.1);
+  --line-strong: rgba(23, 26, 51, 0.2);
+  --text: #15172b;
+  --muted: #555a7a;
+  --faint: #8a8ea8;
+  --accent: #b7791f;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(183, 121, 31, 0.12);
+  --good: #059669;
+  --low: #0284c7;
+  --high: #e11d48;
+
+  --felt-1: #15805f;
+  --felt-2: #0f5e5a;
+  --felt-3: #2d3a8c;
+  --rail-1: #6b4429;
+  --rail-2: #8f5d3a;
+
+  --card-face: #ffffff;
+  --card-ink: #171a33;
+  --shadow: 0 10px 30px -14px rgba(23, 26, 51, 0.35);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-surface-raised: var(--surface-raised);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-low: var(--low);
+  --color-high: var(--high);
+  --color-card-face: var(--card-face);
+  --color-card-ink: var(--card-ink);
+  --font-sans: var(--font-ui);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+}
+
+/* ------------------------------------------------------------------ base */
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  font-family: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
+  background-image:
+    radial-gradient(60rem 40rem at 10% -10%, var(--bg-glow-1), transparent 60%),
+    radial-gradient(50rem 35rem at 110% 10%, var(--bg-glow-2), transparent 60%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------- the table */
+
+.felt {
+  background:
+    radial-gradient(120% 90% at 50% 35%, rgba(255, 255, 255, 0.14), transparent 55%),
+    radial-gradient(80% 80% at 20% 80%, var(--felt-3), transparent 70%),
+    linear-gradient(135deg, var(--felt-1), var(--felt-2));
+  box-shadow:
+    inset 0 0 0 10px var(--rail-1),
+    inset 0 0 0 12px rgba(255, 255, 255, 0.08),
+    inset 0 0 0 22px var(--rail-2),
+    inset 0 20px 60px rgba(0, 0, 0, 0.45),
+    0 40px 80px -30px rgba(0, 0, 0, 0.8);
+}
+
+.felt::after {
+  /* faint fabric grain */
+  content: "";
+  position: absolute;
+  inset: 22px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.25;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.03) 0 2px,
+    transparent 2px 4px
+  );
+}
+
+/* ----------------------------------------------------------------- cards */
+
+.card-face {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 45%),
+    var(--card-face);
+  color: var(--card-ink);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 0 0 1px rgba(23, 26, 51, 0.08),
+    var(--shadow);
+}
+
+.card-back {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.09) 0 6px, transparent 6px 12px),
+    linear-gradient(145deg, var(--card-back-1), var(--card-back-2));
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.85),
+    inset 0 0 0 5px rgba(0, 0, 0, 0.15),
+    var(--shadow);
+}
+
+/* glossy sweep on hover */
+.gloss {
+  position: relative;
+  overflow: hidden;
+}
+.gloss::before {
+  content: "";
+  position: absolute;
+  inset: -40% -60%;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 60%
+  );
+  transform: translateX(-60%);
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  pointer-events: none;
+  z-index: 2;
+}
+.gloss:hover::before,
+.gloss:focus-visible::before {
+  transform: translateX(60%);
+}
+
+.flip-scene {
+  perspective: 900px;
+}
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* -------------------------------------------------------------- utilities */
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.wordmark-gradient {
+  background: linear-gradient(100deg, var(--text) 0%, var(--text) 45%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
