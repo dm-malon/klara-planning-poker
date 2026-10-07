@@ -20,6 +20,9 @@ There's no test suite yet. Check behaviour by opening one room in several tabs.
   - Presence carries each `Participant` (`id, name, icon, role, joinedAt, vote, voteRound`).
     `icon` must be one of `AVATAR_ICONS` in `lib/avatar.ts`; anything else renders as initials.
   - Broadcast carries the host-owned `RoomState`. Its events are `state` and `request-state`.
+  - The `fx` broadcast event carries one-off fun effects (throw / poke / react, `lib/fx.ts`). These
+    never touch `RoomState`. Receivers validate them with `parseFx()`, senders are rate-limited, and
+    `FxLayer` finds avatars on screen through their `data-seat` attribute.
 - **The host is the only writer of `RoomState`.** Every write goes through `commit()` in
   `lib/realtime.ts`, which bumps `version` and broadcasts. Clients resolve competing states with
   `isNewer()`. Non-hosts only change their own presence.

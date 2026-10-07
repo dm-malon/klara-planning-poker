@@ -3,6 +3,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DeckId } from "./decks";
+import { createRateLimiter, parseFx, type Fx } from "./fx";
 import type { Identity, Role } from "./identity";
 import { chooseMeme, type Meme } from "./memes";
 import { computeResult, type Outcome, type VoteMap } from "./stats";
@@ -68,7 +69,7 @@ interface Transport {
   close(): void;
 }
 
-const EVENTS = ["state", "request-state"] as const;
+const EVENTS = ["state", "request-state", "fx"] as const;
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -312,6 +313,8 @@ export function useRoom(roomId: string, identity: Identity | null) {
   );
 
   const transport = useRef<Transport | null>(null);
+  const fxListeners = useRef(new Set<(fx: Fx) => void>());
+  const [fxLimiter] = useState(() => createRateLimiter(8, 4000));
   const stateRef = useRef<RoomState | null>(null);
   const participantsRef = useRef<Participant[]>([]);
   const meRef = useRef<Participant | null>(null);
@@ -404,7 +407,10 @@ export function useRoom(roomId: string, identity: Identity | null) {
         if (fresh.length && s && s.hostId === myId) t.send("state", s);
       },
       onMessage(event, payload) {
-        if (event === "state") {
+        if (event === "fx") {
+          const fx = parseFx(payload);
+          if (fx) fxListeners.current.forEach((l) => l(fx));
+        } else if (event === "state") {
           applyState(payload as RoomState);
         } else if (event === "request-state") {
           const s = stateRef.current;
@@ -561,6 +567,30 @@ export function useRoom(roomId: string, identity: Identity | null) {
     [commit],
   );
 
+  /** Fire a fun effect at the room; rate-limited, and echoed locally (broadcast skips self). */
+  const sendFx = useCallback(
+    (fx: DistributiveOmit<Fx, "id" | "from">): boolean => {
+      if (!myId || !fxLimiter()) return false;
+      const full = {
+        ...fx,
+        id: Math.random().toString(36).slice(2, 10),
+        from: myId,
+      } as Fx;
+      transport.current?.send("fx", full);
+      fxListeners.current.forEach((l) => l(full));
+      return true;
+    },
+    [myId, fxLimiter],
+  );
+
+  const subscribeFx = useCallback((listener: (fx: Fx) => void) => {
+    const set = fxListeners.current;
+    set.add(listener);
+    return () => {
+      set.delete(listener);
+    };
+  }, []);
+
   const vote = useCallback(
     (value: string | null) => {
       const s = stateRef.current;
@@ -635,8 +665,14 @@ export function useRoom(roomId: string, identity: Identity | null) {
       setAutoReveal,
       setMemesOn,
       handOver,
+      sendFx,
     },
+    subscribeFx,
   };
 }
+
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
+  ? Omit<T, K>
+  : never;
 
 export type RoomApi = ReturnType<typeof useRoom>;

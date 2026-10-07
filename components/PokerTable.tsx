@@ -5,6 +5,7 @@ import { DECKS, findCard } from "@/lib/decks";
 import type { Participant, RoomState } from "@/lib/realtime";
 import { formatNumber, type RoundResult } from "@/lib/stats";
 import { Avatar } from "./Avatar";
+import { PersonMenu, type PersonActions } from "./PersonMenu";
 import { SeatCard } from "./PlayingCard";
 
 interface SeatInfo {
@@ -54,6 +55,7 @@ export function PokerTable({
   isHost,
   onReveal,
   onNewRound,
+  actions,
 }: {
   state: RoomState;
   voters: Participant[];
@@ -65,6 +67,8 @@ export function PokerTable({
   isHost: boolean;
   onReveal: () => void;
   onNewRound: () => void;
+  /** Throw / poke handlers for other people's avatars. */
+  actions?: PersonActions;
 }) {
   // Rotate seating so you always sit at the bottom of the table.
   const meIndex = voters.findIndex((v) => v.id === myId);
@@ -138,6 +142,8 @@ export function PokerTable({
                     info={s}
                     isMe={s.p.id === myId}
                     isHost={s.p.id === state.hostId}
+                    actions={actions}
+                    placement={person.top < 50 ? "below" : "above"}
                   />
                 </motion.div>
               </motion.div>
@@ -151,7 +157,7 @@ export function PokerTable({
         <div className="table-surface relative mx-auto grid min-h-48 place-items-center rounded-[2.5rem] px-6 py-8">
           {center}
         </div>
-        <ul className="mt-4 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface shadow-soft">
+        <ul className="mt-4 divide-y divide-line rounded-2xl border border-line bg-surface shadow-soft">
           <AnimatePresence initial={false}>
             {seats.map((s) => (
               <motion.li
@@ -162,7 +168,14 @@ export function PokerTable({
                 exit={{ opacity: 0, height: 0 }}
                 className="flex items-center gap-3 px-4 py-2.5"
               >
-                <Avatar name={s.p.name} icon={s.p.icon} size="sm" />
+                <PersonMenu
+                  id={s.p.id}
+                  name={s.p.name}
+                  isMe={s.p.id === myId}
+                  actions={actions}
+                >
+                  <Avatar name={s.p.name} icon={s.p.icon} size="sm" />
+                </PersonMenu>
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold">
                   {s.p.name}
                   {s.p.id === myId && (
@@ -189,7 +202,12 @@ export function PokerTable({
         </ul>
       </div>
 
-      <SpectatorRow spectators={spectators} myId={myId} hostId={state.hostId} />
+      <SpectatorRow
+        spectators={spectators}
+        myId={myId}
+        hostId={state.hostId}
+        actions={actions}
+      />
     </section>
   );
 }
@@ -208,10 +226,14 @@ function SeatPerson({
   info,
   isMe,
   isHost,
+  actions,
+  placement,
 }: {
   info: SeatInfo;
   isMe: boolean;
   isHost: boolean;
+  actions?: PersonActions;
+  placement: "below" | "above";
 }) {
   const ring =
     info.tone === "low"
@@ -223,12 +245,18 @@ function SeatPerson({
           : undefined;
   return (
     <div className="flex w-32 flex-col items-center gap-1.5 text-center">
-      <div className="relative">
+      <PersonMenu
+        id={info.p.id}
+        name={info.p.name}
+        isMe={isMe}
+        actions={actions}
+        placement={placement}
+      >
         <Avatar name={info.p.name} icon={info.p.icon} size="lg" ring={ring} />
         {isHost && (
           <HostBadge className="absolute -bottom-1.5 left-1/2 -translate-x-1/2" />
         )}
-      </div>
+      </PersonMenu>
       <span className="max-w-full truncate text-sm font-semibold">
         {info.p.name}
         {isMe && <span className="font-normal text-muted"> (you)</span>}
@@ -255,10 +283,12 @@ function SpectatorRow({
   spectators,
   myId,
   hostId,
+  actions,
 }: {
   spectators: Participant[];
   myId: string;
   hostId: string;
+  actions?: PersonActions;
 }) {
   if (!spectators.length) return null;
   return (
@@ -279,7 +309,15 @@ function SpectatorRow({
             exit={{ opacity: 0, scale: 0.8 }}
             className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-1 pr-3 pl-1 text-xs font-semibold shadow-soft"
           >
-            <Avatar name={s.name} icon={s.icon} size="sm" />
+            <PersonMenu
+              id={s.id}
+              name={s.name}
+              isMe={s.id === myId}
+              actions={actions}
+              placement="above"
+            >
+              <Avatar name={s.name} icon={s.icon} size="sm" />
+            </PersonMenu>
             <span aria-hidden className="text-muted">
               👁
             </span>

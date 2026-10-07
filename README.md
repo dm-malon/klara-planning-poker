@@ -14,6 +14,8 @@ Supabase Realtime (Presence + Broadcast, **no database tables**), GIPHY, Framer 
   lowest/highest outliers highlighted, round history drawer
 - Outcome-based GIPHY meme chosen by the host and broadcast so everyone sees the same one;
   confetti on consensus; emoji fallback when GIPHY is unavailable
+- Mess with your teammates: click someone's avatar to throw 🍅 ✈️ 🍪 ❤️ 🥚 🎯 at them or poke them,
+  plus quick 👍 😂 😱 🤯 🎉 🙈 reactions. Everyone sees them live, and spam is rate-limited
 - Dark/light theme, responsive (participant list + scrollable card sheet on mobile), keyboard play
 
 ### Keyboard

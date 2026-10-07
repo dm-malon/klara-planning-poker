@@ -14,11 +14,14 @@ import { realtimeMode, useRoom } from "@/lib/realtime";
 import { computeResult } from "@/lib/stats";
 import { toast } from "@/lib/toast";
 import { CardHand, shortcutFor } from "./CardHand";
+import { FxLayer } from "./FxLayer";
 import { HistoryPanel } from "./HistoryPanel";
 import { HostPanel } from "./HostPanel";
 import { JoinModal } from "./JoinModal";
 import { MemeCard } from "./MemeCard";
+import type { PersonActions } from "./PersonMenu";
 import { PokerTable } from "./PokerTable";
+import { ReactionBar } from "./ReactionBar";
 import { Results } from "./Results";
 import { RoomHeader } from "./RoomHeader";
 
@@ -116,6 +119,26 @@ export function Room({ roomId }: { roomId: string }) {
   const isVoter = identity?.role === "voter";
   const canVote = !!state && isVoter && !state.revealed;
   const deckLocked = !!state && !state.revealed && room.votedCount > 0;
+
+  // Fun stuff: throw things, poke, react. Rate-limited in useRoom.
+  const { sendFx } = actions;
+  const fire = useCallback(
+    (fx: Parameters<typeof sendFx>[0]) => {
+      if (!sendFx(fx)) toast("Easy there, sharpshooter", "😅", 1800);
+    },
+    [sendFx],
+  );
+  const personActions = useMemo<PersonActions>(
+    () => ({
+      onThrow: (to, emoji) => fire({ kind: "throw", to, emoji }),
+      onPoke: (to) => fire({ kind: "poke", to }),
+    }),
+    [fire],
+  );
+  const names = useMemo(
+    () => Object.fromEntries(room.participants.map((p) => [p.id, p.name])),
+    [room.participants],
+  );
 
   // Keyboard: 1–9/0 pick a card, ? and C the specials, Esc clears; host: R reveal, N new round.
   useEffect(() => {
@@ -222,6 +245,7 @@ export function Room({ roomId }: { roomId: string }) {
                   isHost={isHost}
                   onReveal={() => void actions.reveal()}
                   onNewRound={actions.newRound}
+                  actions={personActions}
                 />
               </motion.div>
               <AnimatePresence>
@@ -315,6 +339,17 @@ export function Room({ roomId }: { roomId: string }) {
             pending={state.memesOn && !state.meme}
           />
         )}
+
+      {state && identity && me && (
+        <>
+          <ReactionBar onReact={(emoji) => fire({ kind: "react", emoji })} />
+          <FxLayer
+            subscribe={room.subscribeFx}
+            myId={identity.id}
+            names={names}
+          />
+        </>
+      )}
 
       <HistoryPanel
         open={historyOpen}
