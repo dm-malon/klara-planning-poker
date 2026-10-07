@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { OUTCOME_LABEL, type Meme } from "@/lib/memes";
 
-const SHRINK_AFTER_MS = 8000;
+const SHRINK_AFTER_MS = 15000;
 
 /** Shows the round's meme big, then tucks it into a corner. Keyed per meme by the parent. */
 export function MemeCard({
@@ -16,12 +16,14 @@ export function MemeCard({
 }) {
   const [expanded, setExpanded] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+  // Hovering the meme pauses the shrink timer (it restarts when the pointer leaves).
+  const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
-    if (!meme || !expanded) return;
+    if (!meme || !expanded || hovered) return;
     const t = setTimeout(() => setExpanded(false), SHRINK_AFTER_MS);
     return () => clearTimeout(t);
-  }, [meme, expanded]);
+  }, [meme, expanded, hovered]);
 
   useEffect(() => {
     if (!expanded || !meme) return;
@@ -38,6 +40,8 @@ export function MemeCard({
       {show && (
         <motion.aside
           key="meme"
+          onPointerEnter={() => setHovered(true)}
+          onPointerLeave={() => setHovered(false)}
           layout
           aria-label="Round meme"
           initial={{ opacity: 0, scale: 0.6, rotate: -6 }}
