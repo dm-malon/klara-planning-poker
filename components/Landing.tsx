@@ -23,10 +23,10 @@ const FAN: {
 ];
 
 const SEATS = [
-  { name: "Olena K", left: "50%", top: "6%" },
-  { name: "Max", left: "4%", top: "50%" },
-  { name: "Taras B", left: "96%", top: "50%" },
-  { name: "Iryna", left: "50%", top: "94%" },
+  { name: "Olena K", icon: "🦊", left: "50%", top: "6%" },
+  { name: "Max", icon: "🤖", left: "4%", top: "50%" },
+  { name: "Taras B", icon: null, left: "96%", top: "50%" },
+  { name: "Iryna", icon: "🦄", left: "50%", top: "94%" },
 ];
 
 export function Landing() {
@@ -75,9 +75,9 @@ export function Landing() {
             transition={{ delay: 0.2 }}
             className="mt-6 max-w-md text-lg text-muted"
           >
-            Sabrina told us 13 times that our planning poker app had no
-            licence. So this one&apos;s for you, Sabrina — we just want to
-            protect your health. 💜
+            Sabrina told us 13 times that our planning poker app had no licence.
+            So this one&apos;s for you, Sabrina — we just want to protect your
+            health. 💜
           </motion.p>
 
           <motion.div
@@ -173,7 +173,7 @@ export function Landing() {
               className="absolute -translate-x-1/2 -translate-y-1/2"
               style={{ left: seat.left, top: seat.top }}
             >
-              <Avatar name={seat.name} />
+              <Avatar name={seat.name} icon={seat.icon} size="lg" />
             </motion.div>
           ))}
 

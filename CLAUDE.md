@@ -17,7 +17,8 @@ There's no test suite yet. Check behaviour by opening one room in several tabs.
 ## Architecture
 
 - **No database, no server state.** Each room is a Realtime channel `klara-poker:<roomId>`.
-  - Presence carries each `Participant` (`id, name, role, joinedAt, vote, voteRound`).
+  - Presence carries each `Participant` (`id, name, icon, role, joinedAt, vote, voteRound`).
+    `icon` must be one of `AVATAR_ICONS` in `lib/avatar.ts`; anything else renders as initials.
   - Broadcast carries the host-owned `RoomState`. Its events are `state` and `request-state`.
 - **The host is the only writer of `RoomState`.** Every write goes through `commit()` in
   `lib/realtime.ts`, which bumps `version` and broadcasts. Clients resolve competing states with

@@ -22,9 +22,12 @@ const OUTCOME_EMOJI = {
 export function Results({
   state,
   result,
+  icons = {},
 }: {
   state: RoomState;
   result: RoundResult;
+  /** Avatar icons of people still in the room, by participant id. */
+  icons?: Record<string, string | null | undefined>;
 }) {
   const deck = DECKS[state.deck];
   const names = state.voterNames ?? {};
@@ -150,6 +153,7 @@ export function Results({
                           <span key={id} title={names[id]}>
                             <Avatar
                               name={names[id] ?? "?"}
+                              icon={icons[id]}
                               size="sm"
                               className="!size-5 !text-[8px]"
                             />

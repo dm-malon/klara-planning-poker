@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { NAME_MAX, cleanName, type Role } from "@/lib/identity";
 import { Avatar } from "./Avatar";
+import { IconPicker } from "./IconPicker";
 import { RoleSwitch } from "./RoleSwitch";
 
 export function JoinModal({
@@ -11,6 +12,7 @@ export function JoinModal({
   roomId,
   initialName,
   initialRole,
+  initialIcon,
   onSubmit,
   onClose,
 }: {
@@ -18,11 +20,13 @@ export function JoinModal({
   roomId: string;
   initialName: string;
   initialRole: Role;
-  onSubmit: (name: string, role: Role) => void;
+  initialIcon: string | null;
+  onSubmit: (name: string, role: Role, icon: string | null) => void;
   onClose?: () => void;
 }) {
   const [name, setName] = useState(initialName);
   const [role, setRole] = useState<Role>(initialRole);
+  const [icon, setIcon] = useState<string | null>(initialIcon);
   const clean = cleanName(name);
   const valid = clean.length >= 1;
 
@@ -52,12 +56,12 @@ export function JoinModal({
         onClick={(e) => e.stopPropagation()}
         onSubmit={(e) => {
           e.preventDefault();
-          if (valid) onSubmit(clean, role);
+          if (valid) onSubmit(clean, role, icon);
         }}
-        className="w-full max-w-sm rounded-3xl border border-line bg-surface-strong p-6 shadow-2xl"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-line bg-surface-strong p-6 shadow-2xl"
       >
         <div className="mb-5 flex items-center gap-3">
-          <Avatar name={clean || "?"} size="lg" />
+          <Avatar name={clean || "?"} icon={icon} size="lg" />
           <div className="min-w-0">
             <h2
               id="join-title"
@@ -86,7 +90,17 @@ export function JoinModal({
           {clean.length}/{NAME_MAX}
         </p>
 
-        <p className="mb-1.5 text-sm font-semibold" id="role-label">
+        <p className="mb-1.5 text-sm font-semibold" id="icon-label">
+          Avatar
+        </p>
+        <IconPicker
+          name={clean || "?"}
+          value={icon}
+          onChange={setIcon}
+          labelledBy="icon-label"
+        />
+
+        <p className="mt-5 mb-1.5 text-sm font-semibold" id="role-label">
           Join as
         </p>
         <RoleSwitch

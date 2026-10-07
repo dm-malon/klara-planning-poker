@@ -21,6 +21,7 @@ export function RoomHeader({
   state,
   status,
   name,
+  icon,
   role,
   historyCount,
   onRole,
@@ -31,6 +32,7 @@ export function RoomHeader({
   state: RoomState | null;
   status: ConnStatus;
   name: string;
+  icon: string | null;
   role: Role;
   historyCount: number;
   onRole: (role: Role) => void;
@@ -107,10 +109,15 @@ export function RoomHeader({
           <button
             onClick={onEditProfile}
             aria-label={`Edit profile (${name})`}
-            title="Edit name & role"
+            title="Edit name, avatar & role"
             className="rounded-full transition hover:scale-105"
           >
-            <Avatar name={name || "?"} size="sm" className="!size-9" />
+            <Avatar
+              name={name || "?"}
+              icon={icon}
+              size="md"
+              className="!size-9"
+            />
           </button>
         </div>
 

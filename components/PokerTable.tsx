@@ -162,7 +162,7 @@ export function PokerTable({
                 exit={{ opacity: 0, height: 0 }}
                 className="flex items-center gap-3 px-4 py-2.5"
               >
-                <Avatar name={s.p.name} size="sm" />
+                <Avatar name={s.p.name} icon={s.p.icon} size="sm" />
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold">
                   {s.p.name}
                   {s.p.id === myId && (
@@ -224,7 +224,7 @@ function SeatPerson({
   return (
     <div className="flex w-32 flex-col items-center gap-1.5 text-center">
       <div className="relative">
-        <Avatar name={info.p.name} size="lg" ring={ring} />
+        <Avatar name={info.p.name} icon={info.p.icon} size="lg" ring={ring} />
         {isHost && (
           <HostBadge className="absolute -bottom-1.5 left-1/2 -translate-x-1/2" />
         )}
@@ -279,7 +279,7 @@ function SpectatorRow({
             exit={{ opacity: 0, scale: 0.8 }}
             className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-1 pr-3 pl-1 text-xs font-semibold shadow-soft"
           >
-            <Avatar name={s.name} size="sm" />
+            <Avatar name={s.name} icon={s.icon} size="sm" />
             <span aria-hidden className="text-muted">
               👁
             </span>

@@ -14,6 +14,8 @@ export interface Participant {
   id: string;
   name: string;
   role: Role;
+  /** Emoji avatar; null (or missing, from older clients) means initials. */
+  icon?: string | null;
   /** Used for host election: longest-connected voter wins. */
   joinedAt: number;
   vote: string | null;
@@ -325,6 +327,7 @@ export function useRoom(roomId: string, identity: Identity | null) {
             id: identity.id,
             name: identity.name,
             role: identity.role,
+            icon: identity.icon,
             joinedAt,
             vote: identity.role === "voter" ? ballot.vote : null,
             voteRound: ballot.voteRound,

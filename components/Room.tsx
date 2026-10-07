@@ -165,6 +165,7 @@ export function Room({ roomId }: { roomId: string }) {
         state={state}
         status={room.status}
         name={identity?.name ?? ""}
+        icon={identity?.icon ?? null}
         role={identity?.role ?? "voter"}
         historyCount={state?.history.length ?? 0}
         onRole={(role: Role) => {
@@ -225,7 +226,14 @@ export function Room({ roomId }: { roomId: string }) {
               </motion.div>
               <AnimatePresence>
                 {result && (
-                  <Results key={state.roundId} state={state} result={result} />
+                  <Results
+                    key={state.roundId}
+                    state={state}
+                    result={result}
+                    icons={Object.fromEntries(
+                      room.participants.map((p) => [p.id, p.icon]),
+                    )}
+                  />
                 )}
               </AnimatePresence>
             </div>
@@ -322,8 +330,9 @@ export function Room({ roomId }: { roomId: string }) {
             roomId={roomId}
             initialName={identity.name || suggestedName}
             initialRole={identity.role}
-            onSubmit={(name, role) => {
-              updateIdentity({ name, role });
+            initialIcon={identity.icon}
+            onSubmit={(name, role, icon) => {
+              updateIdentity({ name, role, icon });
               setEditing(false);
             }}
             onClose={() => setEditing(false)}

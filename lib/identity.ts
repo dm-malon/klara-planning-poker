@@ -1,14 +1,19 @@
+import { isAvatarIcon } from "./avatar";
+
 export type Role = "voter" | "spectator";
 
 export interface Identity {
   id: string;
   name: string;
   role: Role;
+  /** Emoji avatar, or null for initials. */
+  icon: string | null;
 }
 
 const KEY_ID = "klara.clientId";
 const KEY_NAME = "klara.name";
 const KEY_ROLE = "klara.role";
+const KEY_ICON = "klara.icon";
 
 type Store = "local" | "session";
 
@@ -59,8 +64,10 @@ export function loadIdentity(perTab = false): {
   }
   const role = safeGet(KEY_ROLE, store) === "spectator" ? "spectator" : "voter";
   const name = safeGet(KEY_NAME, store) ?? "";
+  const savedIcon = safeGet(KEY_ICON, store);
+  const icon = isAvatarIcon(savedIcon) ? savedIcon : null;
   return {
-    identity: { id, name, role },
+    identity: { id, name, role, icon },
     suggestedName: name || (safeGet(KEY_NAME) ?? ""),
   };
 }
@@ -69,6 +76,7 @@ export function saveIdentity(identity: Identity, perTab = false) {
   const store: Store = perTab ? "session" : "local";
   safeSet(KEY_NAME, identity.name, store);
   safeSet(KEY_ROLE, identity.role, store);
+  safeSet(KEY_ICON, identity.icon ?? "", store);
   if (perTab) safeSet(KEY_NAME, identity.name);
 }
 

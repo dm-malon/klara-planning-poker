@@ -1,3 +1,43 @@
+/** Pickable avatar icons; null means "use initials". */
+export const AVATAR_ICONS = [
+  "🦊",
+  "🐼",
+  "🐨",
+  "🦁",
+  "🐯",
+  "🐸",
+  "🐙",
+  "🦄",
+  "🐧",
+  "🦉",
+  "🐳",
+  "🦖",
+  "🐝",
+  "🐢",
+  "🦥",
+  "🦦",
+  "🐶",
+  "🐱",
+  "🐵",
+  "🐻",
+  "🤖",
+  "👽",
+  "👻",
+  "🥷",
+  "🧙",
+  "🧑‍🚀",
+  "🍕",
+  "🌮",
+  "🍩",
+  "🔥",
+  "⚡",
+  "🚀",
+];
+
+export function isAvatarIcon(value: unknown): value is string {
+  return typeof value === "string" && AVATAR_ICONS.includes(value);
+}
+
 function hash(str: string): number {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) {

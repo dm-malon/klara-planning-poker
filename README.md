@@ -6,7 +6,8 @@ Supabase Realtime (Presence + Broadcast, **no database tables**), GIPHY, Framer 
 ## Features
 
 - Create / join rooms with readable ids (`brave-otter-42`), copy invite link
-- Name + role (Voter / Spectator) modal, remembered in `localStorage`; editable any time
+- Name, avatar (initials or a pickable emoji) and role (Voter / Spectator), remembered in
+  `localStorage`; editable any time from the avatar in the header
 - Story points (0, ½, 1, 2, 3, 5, 8, 13, 21, ?, ☕) or Hourly (1h … 40h, ?, ☕) decks
 - Host controls: deck, reveal, new round, auto-reveal, memes on/off, hand over host
 - 3D card flip, average / median / min–max / distribution, suggested Fibonacci card or "≈ X days",
