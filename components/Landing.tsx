@@ -57,14 +57,6 @@ export function Landing() {
 
       <section className="grid flex-1 items-center gap-12 pb-16 lg:grid-cols-[1.15fr_1fr]">
         <div>
-          <motion.p
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-muted shadow-soft"
-          >
-            <span className="size-1.5 rounded-full bg-good" /> Real-time
-            estimation for agile teams
-          </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
