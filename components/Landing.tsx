@@ -16,10 +16,10 @@ const FAN: {
   y: number;
   back?: boolean;
 }[] = [
-  { label: "3", rotate: -12, x: -126, y: 10 },
-  { label: "5", rotate: -4, x: -42, y: 0 },
-  { label: "8", rotate: 4, x: 42, y: 0, back: true },
-  { label: "13", rotate: 12, x: 126, y: 10 },
+  { label: "3", rotate: -10, x: -84, y: 8 },
+  { label: "5", rotate: -3, x: -28, y: 0 },
+  { label: "8", rotate: 3, x: 28, y: 0, back: true },
+  { label: "13", rotate: 10, x: 84, y: 8 },
 ];
 
 const SEATS = [
@@ -178,13 +178,13 @@ export function Landing() {
           ))}
 
           <div className="absolute inset-0 grid place-items-center">
-            <div className="relative h-36 w-[6.5rem]">
+            <div className="relative h-[6.5rem] w-[4.5rem]">
               {FAN.map((c, i) => (
                 <motion.div
                   key={c.label}
                   initial={{ opacity: 0, y: 60, rotate: 0, x: 0 }}
                   animate={{ opacity: 1, y: c.y, rotate: c.rotate, x: c.x }}
-                  whileHover={{ y: c.y - 16 }}
+                  whileHover={{ y: c.y - 12 }}
                   transition={{
                     delay: 0.2 + i * 0.08,
                     type: "spring",
@@ -197,13 +197,13 @@ export function Landing() {
                 >
                   {!c.back && (
                     <>
-                      <span className="absolute top-2 left-2.5 font-display text-sm font-bold">
+                      <span className="absolute top-1.5 left-2 font-display text-[11px] font-bold">
                         {c.label}
                       </span>
-                      <span className="absolute inset-0 grid place-items-center font-display text-5xl font-bold">
+                      <span className="absolute inset-0 grid place-items-center font-display text-3xl font-bold">
                         {c.label}
                       </span>
-                      <span className="absolute right-2.5 bottom-2 rotate-180 font-display text-sm font-bold">
+                      <span className="absolute right-2 bottom-1.5 rotate-180 font-display text-[11px] font-bold">
                         {c.label}
                       </span>
                     </>
