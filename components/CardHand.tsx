@@ -45,7 +45,12 @@ export function CardHand({
   };
 
   return (
-    <div className="relative">
+    <div>
+      {disabled && disabledReason && (
+        <p className="px-4 pt-3 text-center text-xs font-semibold text-muted">
+          {disabledReason}
+        </p>
+      )}
       <div
         role="radiogroup"
         aria-label="Your estimate"
@@ -69,7 +74,10 @@ export function CardHand({
               disabled={disabled}
               onKeyDown={(e) => onKeyDown(e, i)}
               onClick={() => onSelect(isSelected ? null : card.value)}
-              animate={{ y: isSelected ? -22 : 0, rotate: isSelected ? -2 : 0 }}
+              animate={{
+                y: isSelected ? (disabled ? -10 : -22) : 0,
+                rotate: isSelected && !disabled ? -2 : 0,
+              }}
               whileHover={disabled ? undefined : { y: isSelected ? -26 : -10 }}
               whileTap={disabled ? undefined : { scale: 0.96 }}
               transition={{ type: "spring", stiffness: 420, damping: 24 }}
@@ -107,11 +115,6 @@ export function CardHand({
           );
         })}
       </div>
-      {disabled && disabledReason && (
-        <p className="pointer-events-none absolute inset-x-0 top-1 text-center text-xs font-semibold text-muted">
-          {disabledReason}
-        </p>
-      )}
     </div>
   );
 }

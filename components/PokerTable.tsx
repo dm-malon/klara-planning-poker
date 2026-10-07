@@ -93,9 +93,9 @@ export function PokerTable({
   return (
     <section aria-label="Poker table" className="w-full">
       {/* Desktop / tablet: wide table with seats around it */}
-      <div className="relative mx-auto hidden aspect-[2.25/1] w-full max-w-[1240px] md:block">
-        <div className="table-surface absolute inset-x-[7%] inset-y-[17%] rounded-full" />
-        <div className="absolute inset-x-[25%] inset-y-[32%] grid place-items-center">
+      <div className="relative mx-auto hidden w-full max-w-[1240px] md:block md:aspect-[1.6/1] lg:aspect-[1.9/1] xl:aspect-[2.1/1]">
+        <div className="table-surface absolute inset-x-[7%] inset-y-[15%] rounded-full" />
+        <div className="absolute inset-x-[25%] inset-y-[31%] grid place-items-center">
           {center}
         </div>
 
@@ -103,8 +103,8 @@ export function PokerTable({
           {seats.map((s, i) => {
             const angle =
               Math.PI / 2 + (i * 2 * Math.PI) / Math.max(seats.length, 1);
-            const card = seatPoint(angle, 34, 21);
-            const person = seatPoint(angle, 47.5, 44);
+            const card = seatPoint(angle, 34, 25);
+            const person = seatPoint(angle, 47.5, 43.5);
             return (
               <motion.div
                 key={s.p.id}
@@ -316,7 +316,7 @@ function TableCenter({
 }) {
   const deck = DECKS[state.deck];
   return (
-    <div className="flex flex-col items-center gap-3 text-center">
+    <div className="flex flex-col items-center gap-2.5 text-center">
       {state.revealed && result ? (
         <div className="flex flex-col items-center">
           <span className="text-[11px] font-semibold tracking-[0.2em] text-muted uppercase">
@@ -332,7 +332,7 @@ function TableCenter({
               damping: 14,
               delay: 0.5,
             }}
-            className="text-gradient font-display text-6xl leading-none font-bold tracking-tight lg:text-7xl"
+            className="text-gradient font-display text-5xl leading-none font-bold tracking-tight lg:text-6xl"
           >
             {deck.id === "story"
               ? (findCard("story", result.suggested)?.label ?? "—")
@@ -343,7 +343,7 @@ function TableCenter({
         </div>
       ) : (
         <div className="flex flex-col items-center gap-2">
-          <p className="font-display text-5xl leading-none font-bold tracking-tight lg:text-6xl">
+          <p className="font-display text-4xl leading-none font-bold tracking-tight lg:text-5xl">
             {votedCount}
             <span className="text-faint">/{total}</span>
           </p>
@@ -367,7 +367,7 @@ function TableCenter({
         state.revealed ? (
           <button
             onClick={onNewRound}
-            className="h-11 rounded-full border border-line-strong bg-surface px-6 font-display font-semibold shadow-soft transition hover:-translate-y-0.5 hover:border-text"
+            className="h-10 rounded-full border border-line-strong bg-surface px-6 font-display font-semibold shadow-soft transition hover:-translate-y-0.5 hover:border-text"
           >
             New round{" "}
             <kbd className="ml-1 font-mono text-[10px] text-faint">N</kbd>
@@ -376,7 +376,7 @@ function TableCenter({
           <button
             onClick={onReveal}
             disabled={votedCount === 0}
-            className="accent-gradient h-11 rounded-full px-7 font-display font-semibold text-accent-ink shadow-[0_10px_24px_-10px_var(--accent)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none"
+            className="accent-gradient h-10 rounded-full px-6 font-display font-semibold text-accent-ink shadow-[0_10px_24px_-10px_var(--accent)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none"
           >
             Reveal cards{" "}
             <kbd className="ml-1 font-mono text-[10px] opacity-70">R</kbd>

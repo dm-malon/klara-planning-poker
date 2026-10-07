@@ -4,9 +4,9 @@ import { motion, useReducedMotion } from "framer-motion";
 
 const SIZE = {
   seat: {
-    box: "h-[5.25rem] w-[3.75rem]",
+    box: "h-[4.25rem] w-12 lg:h-[5.25rem] lg:w-[3.75rem]",
     corner: "text-[11px]",
-    center: "text-2xl",
+    center: "text-xl lg:text-2xl",
   },
   mini: { box: "h-11 w-8", corner: "hidden", center: "text-sm" },
 };
