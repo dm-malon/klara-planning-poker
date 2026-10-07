@@ -83,8 +83,9 @@ export function Landing() {
             transition={{ delay: 0.2 }}
             className="mt-6 max-w-md text-lg text-muted"
           >
-            Pick a card, flip together, talk through the outliers. No sign-up,
-            no setup — just share a link.
+            Sabrina told us 13 times that our planning poker app had no
+            licence. So this one&apos;s for you, Sabrina — we just want to
+            protect your health. 💜
           </motion.p>
 
           <motion.div
