@@ -51,7 +51,7 @@ There's no test suite yet. Check behaviour by opening one room in several tabs.
 ## Conventions
 
 - Style with the theme tokens in `app/globals.css` (`bg-surface`, `text-muted`, `text-accent`, …),
-  not raw colors. Dark is the default theme; light is set with `[data-theme="light"]` on `<html>`.
+  not raw colors. Light is the default theme; dark is set with `[data-theme="dark"]` on `<html>`.
 - Don't call `setState` synchronously in effects, and don't read or write refs during render. The
   React Compiler lint rejects both, so derive values with `useMemo` instead.
 - Wrap every browser-storage access in try/catch, and guard it for SSR (`typeof window`).
