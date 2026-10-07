@@ -3,7 +3,7 @@
 import confetti from "canvas-confetti";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { DECKS } from "@/lib/decks";
+import { DECKS, findCard } from "@/lib/decks";
 import {
   loadIdentity,
   saveIdentity,
@@ -11,7 +11,7 @@ import {
   type Role,
 } from "@/lib/identity";
 import { realtimeMode, useRoom } from "@/lib/realtime";
-import { computeResult } from "@/lib/stats";
+import { computeResult, formatNumber } from "@/lib/stats";
 import { toast } from "@/lib/toast";
 import { CardHand, shortcutFor } from "./CardHand";
 import { FxLayer } from "./FxLayer";
@@ -100,6 +100,24 @@ export function Room({ roomId }: { roomId: string }) {
     }, 700);
     return () => clearTimeout(t);
   }, [state, result]);
+
+  // Live tab title, so a background tab still shows how the round is going.
+  const votedCount = room.votedCount;
+  const voterCount = room.voters.length;
+  useEffect(() => {
+    let prefix = "";
+    if (state?.revealed && result) {
+      const value =
+        state.deck === "story"
+          ? findCard("story", result.suggested)?.label &&
+            `${findCard("story", result.suggested)!.label} SP`
+          : result.average !== null && `${formatNumber(result.average)}h`;
+      prefix = `✅ ${value || "Revealed"} · `;
+    } else if (state && voterCount > 0) {
+      prefix = `(${votedCount}/${voterCount}) `;
+    }
+    document.title = `${prefix}${roomId} · KLARA Planning Poker`;
+  }, [state, result, votedCount, voterCount, roomId]);
 
   // Announce host changes.
   const prevHost = useRef<string | null>(null);
@@ -297,6 +315,8 @@ export function Room({ roomId }: { roomId: string }) {
       {/* Bottom sheet: the hand of cards */}
       {state && deck && identity?.name && (
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/90 shadow-[0_-10px_30px_-20px_rgba(12,12,20,0.25)] backdrop-blur-md">
+          {/* Anchored to the dock's top edge, so it sits right above it whatever its height. */}
+          <ReactionBar onReact={(emoji) => fire({ kind: "react", emoji })} />
           <div className="mx-auto max-w-5xl">
             {isVoter ? (
               <CardHand
@@ -341,14 +361,11 @@ export function Room({ roomId }: { roomId: string }) {
         )}
 
       {state && identity && me && (
-        <>
-          <ReactionBar onReact={(emoji) => fire({ kind: "react", emoji })} />
-          <FxLayer
-            subscribe={room.subscribeFx}
-            myId={identity.id}
-            names={names}
-          />
-        </>
+        <FxLayer
+          subscribe={room.subscribeFx}
+          myId={identity.id}
+          names={names}
+        />
       )}
 
       <HistoryPanel

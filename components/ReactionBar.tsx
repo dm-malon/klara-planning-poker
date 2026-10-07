@@ -30,7 +30,7 @@ export function ReactionBar({ onReact }: { onReact: (emoji: string) => void }) {
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false);
       }}
-      className="fixed bottom-[11.5rem] left-3 z-20 flex items-center rounded-full border border-line bg-surface/90 p-1 shadow-soft backdrop-blur sm:bottom-[12.5rem] sm:left-5"
+      className="absolute bottom-full left-3 mb-3 flex items-center rounded-full border border-line bg-surface/90 p-1 shadow-soft backdrop-blur sm:left-5"
     >
       <button
         type="button"

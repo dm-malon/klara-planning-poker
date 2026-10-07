@@ -50,10 +50,9 @@ export function Landing() {
 
   return (
     <main className="relative mx-auto flex min-h-dvh max-w-6xl flex-col px-4 sm:px-8">
-      <header className="flex items-center justify-between py-5">
-        <Wordmark />
+      <div className="flex justify-end py-5">
         <ThemeToggle />
-      </header>
+      </div>
 
       <section className="grid flex-1 items-center gap-12 pb-16 lg:grid-cols-[1.15fr_1fr]">
         <div>

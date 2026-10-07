@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { DECKS } from "@/lib/decks";
 import type { Role } from "@/lib/identity";
 import type { ConnStatus, RoomState } from "@/lib/realtime";
@@ -39,11 +40,19 @@ export function RoomHeader({
   onEditProfile: () => void;
   onHistory: () => void;
 }) {
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(t);
+  }, [copied]);
+
   const copyLink = async () => {
     const url = `${window.location.origin}/room/${roomId}`;
     try {
       await navigator.clipboard.writeText(url);
-      toast("Link copied", "🔗");
+      setCopied(true);
+      toast("Invite link copied — paste it to your team", "🔗");
     } catch {
       window.prompt("Copy this invite link:", url);
     }
@@ -72,9 +81,12 @@ export function RoomHeader({
             <span className="max-w-[9rem] truncate">{roomId}</span>
             <button
               onClick={copyLink}
-              className="h-7 rounded-full bg-text px-3 font-sans text-xs font-semibold text-surface transition hover:opacity-85"
+              aria-live="polite"
+              className={`h-7 min-w-[7.5rem] rounded-full px-3 font-sans text-xs font-semibold transition ${
+                copied ? "bg-good text-white" : "bg-text text-surface hover:opacity-85"
+              }`}
             >
-              Copy invite link
+              {copied ? "Copied ✓" : "Copy invite link"}
             </button>
           </span>
           {deck && (

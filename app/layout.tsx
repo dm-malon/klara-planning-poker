@@ -12,10 +12,31 @@ const display = Space_Grotesk({
 const ui = Geist({ variable: "--font-ui", subsets: ["latin"] });
 const mono = Geist_Mono({ variable: "--font-mono", subsets: ["latin"] });
 
+const SITE_NAME = "KLARA Planning Poker";
+const DESCRIPTION =
+  "Real-time planning poker for agile teams. Pick a card, flip together — no sign-up.";
+
+// Absolute base for link-preview images; Vercel provides the production domain.
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "http://localhost:3000";
+
 export const metadata: Metadata = {
-  title: "KLARA PLANNING POKER",
-  description:
-    "Real-time planning poker for agile teams. Estimate together, no sign-up.",
+  metadataBase: new URL(siteUrl),
+  title: { default: SITE_NAME, template: `%s · ${SITE_NAME}` },
+  description: DESCRIPTION,
+  applicationName: SITE_NAME,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: DESCRIPTION,
+  },
 };
 
 export const viewport: Viewport = {
