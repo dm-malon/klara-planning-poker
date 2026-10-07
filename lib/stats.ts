@@ -1,4 +1,11 @@
-import { COFFEE, DECKS, DeckId, QUESTION, findCard, numericCards } from "./decks";
+import {
+  COFFEE,
+  DECKS,
+  DeckId,
+  QUESTION,
+  findCard,
+  numericCards,
+} from "./decks";
 
 export type Outcome =
   | "consensus"
@@ -45,7 +52,9 @@ export function computeResult(deckId: DeckId, votes: VoteMap): RoundResult {
     .filter((e): e is { id: string; v: string; n: number } => e.n !== null);
 
   const nums = numeric.map((e) => e.n).sort((a, b) => a - b);
-  const average = nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : null;
+  const average = nums.length
+    ? nums.reduce((s, n) => s + n, 0) / nums.length
+    : null;
   const median = nums.length
     ? nums.length % 2
       ? nums[(nums.length - 1) / 2]
@@ -69,7 +78,8 @@ export function computeResult(deckId: DeckId, votes: VoteMap): RoundResult {
     suggested = best.value;
   }
 
-  const days = deckId === "hourly" && average !== null ? average / HOURS_PER_DAY : null;
+  const days =
+    deckId === "hourly" && average !== null ? average / HOURS_PER_DAY : null;
 
   const distribution = deck.cards
     .map((c) => ({
@@ -79,8 +89,10 @@ export function computeResult(deckId: DeckId, votes: VoteMap): RoundResult {
     }))
     .filter((d) => d.count > 0);
 
-  const lowIds = spread > 0 ? numeric.filter((e) => e.n === min).map((e) => e.id) : [];
-  const highIds = spread > 0 ? numeric.filter((e) => e.n === max).map((e) => e.id) : [];
+  const lowIds =
+    spread > 0 ? numeric.filter((e) => e.n === min).map((e) => e.id) : [];
+  const highIds =
+    spread > 0 ? numeric.filter((e) => e.n === max).map((e) => e.id) : [];
 
   return {
     count: entries.length,
@@ -95,12 +107,22 @@ export function computeResult(deckId: DeckId, votes: VoteMap): RoundResult {
     distribution,
     lowIds,
     highIds,
-    outcome: classify(deckId, entries.map(([, v]) => v), nums, spread),
+    outcome: classify(
+      deckId,
+      entries.map(([, v]) => v),
+      nums,
+      spread,
+    ),
   };
 }
 
 /** Priority order matters: the first matching rule decides the meme. */
-function classify(deckId: DeckId, values: string[], nums: number[], spread: number): Outcome {
+function classify(
+  deckId: DeckId,
+  values: string[],
+  nums: number[],
+  spread: number,
+): Outcome {
   if (values.length === 0) return "empty";
   if (values.every((v) => v === QUESTION)) return "unknown";
   if (values.some((v) => v === COFFEE)) return "coffee";

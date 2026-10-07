@@ -47,7 +47,10 @@ function randomId(): string {
  * `perTab` (local demo mode) keys identity to the tab so several tabs act as
  * different people; the last used name is still offered as a suggestion.
  */
-export function loadIdentity(perTab = false): { identity: Identity; suggestedName: string } {
+export function loadIdentity(perTab = false): {
+  identity: Identity;
+  suggestedName: string;
+} {
   const store: Store = perTab ? "session" : "local";
   let id = safeGet(KEY_ID, store);
   if (!id) {
@@ -56,7 +59,10 @@ export function loadIdentity(perTab = false): { identity: Identity; suggestedNam
   }
   const role = safeGet(KEY_ROLE, store) === "spectator" ? "spectator" : "voter";
   const name = safeGet(KEY_NAME, store) ?? "";
-  return { identity: { id, name, role }, suggestedName: name || (safeGet(KEY_NAME) ?? "") };
+  return {
+    identity: { id, name, role },
+    suggestedName: name || (safeGet(KEY_NAME) ?? ""),
+  };
 }
 
 export function saveIdentity(identity: Identity, perTab = false) {

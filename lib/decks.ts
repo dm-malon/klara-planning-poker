@@ -34,7 +34,11 @@ export const DECKS: Record<DeckId, Deck> = {
     cards: [
       { value: "0", label: "0", numeric: 0 },
       { value: "0.5", label: "½", numeric: 0.5 },
-      ...[1, 2, 3, 5, 8, 13, 21].map((n) => ({ value: String(n), label: String(n), numeric: n })),
+      ...[1, 2, 3, 5, 8, 13, 21].map((n) => ({
+        value: String(n),
+        label: String(n),
+        numeric: n,
+      })),
       ...special,
     ],
   },
@@ -54,7 +58,10 @@ export const DECKS: Record<DeckId, Deck> = {
   },
 };
 
-export function findCard(deckId: DeckId, value: string | null | undefined): Card | undefined {
+export function findCard(
+  deckId: DeckId,
+  value: string | null | undefined,
+): Card | undefined {
   if (value == null) return undefined;
   return DECKS[deckId].cards.find((c) => c.value === value);
 }

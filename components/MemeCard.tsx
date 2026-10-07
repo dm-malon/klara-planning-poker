@@ -7,7 +7,13 @@ import { OUTCOME_LABEL, type Meme } from "@/lib/memes";
 const SHRINK_AFTER_MS = 8000;
 
 /** Shows the round's meme big, then tucks it into a corner. Keyed per meme by the parent. */
-export function MemeCard({ meme, pending }: { meme: Meme | null; pending: boolean }) {
+export function MemeCard({
+  meme,
+  pending,
+}: {
+  meme: Meme | null;
+  pending: boolean;
+}) {
   const [expanded, setExpanded] = useState(true);
   const [dismissed, setDismissed] = useState(false);
 
@@ -19,7 +25,8 @@ export function MemeCard({ meme, pending }: { meme: Meme | null; pending: boolea
 
   useEffect(() => {
     if (!expanded || !meme) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setExpanded(false);
+    const onKey = (e: KeyboardEvent) =>
+      e.key === "Escape" && setExpanded(false);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [expanded, meme]);
@@ -43,8 +50,13 @@ export function MemeCard({ meme, pending }: { meme: Meme | null; pending: boolea
               : "right-3 bottom-40 w-36 sm:right-6 sm:bottom-44 sm:w-44"
           }`}
         >
-          <motion.div layout="position" className="flex items-center justify-between gap-2 px-3 pt-2.5 pb-2">
-            <span className={`truncate font-display font-extrabold ${expanded ? "text-base" : "text-xs"}`}>
+          <motion.div
+            layout="position"
+            className="flex items-center justify-between gap-2 px-3 pt-2.5 pb-2"
+          >
+            <span
+              className={`truncate font-display font-bold ${expanded ? "text-base" : "text-xs"}`}
+            >
               {meme ? OUTCOME_LABEL[meme.outcome] : "Finding a meme…"}
             </span>
             <span className="flex shrink-0 gap-1">
@@ -94,15 +106,24 @@ export function MemeCard({ meme, pending }: { meme: Meme | null; pending: boolea
                 type="button"
                 onClick={() => setExpanded(true)}
                 disabled={expanded}
-                className="mx-3 mb-0 grid w-[calc(100%-1.5rem)] place-items-center gap-2 rounded-2xl bg-[linear-gradient(135deg,var(--card-back-1),var(--card-back-2))] px-4 py-6 text-center text-white"
+                className="mx-3 mb-0 grid w-[calc(100%-1.5rem)] place-items-center gap-2 rounded-2xl accent-gradient px-4 py-6 text-center text-white"
               >
-                <span className={expanded ? "text-7xl" : "text-4xl"} aria-hidden>
+                <span
+                  className={expanded ? "text-7xl" : "text-4xl"}
+                  aria-hidden
+                >
                   {meme.emoji}
                 </span>
-                {expanded && <span className="font-display text-xl font-extrabold">{meme.caption}</span>}
+                {expanded && (
+                  <span className="font-display text-xl font-bold">
+                    {meme.caption}
+                  </span>
+                )}
               </button>
             )}
-            <p className={`px-3 pt-1.5 pb-2.5 text-[10px] text-faint ${expanded ? "" : "hidden"}`}>
+            <p
+              className={`px-3 pt-1.5 pb-2.5 text-[10px] text-faint ${expanded ? "" : "hidden"}`}
+            >
               {meme?.kind === "gif" ? (
                 <>“{meme.query}” · Powered by GIPHY</>
               ) : meme ? (

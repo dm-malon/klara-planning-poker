@@ -84,7 +84,11 @@ function getSupabase(): SupabaseClient {
   return supabase;
 }
 
-function createSupabaseTransport(roomId: string, myId: string, h: TransportHandlers): Transport {
+function createSupabaseTransport(
+  roomId: string,
+  myId: string,
+  h: TransportHandlers,
+): Transport {
   const client = getSupabase();
   const ch = client.channel(`klara-poker:${roomId}`, {
     config: { presence: { key: myId }, broadcast: { self: false } },
@@ -131,16 +135,24 @@ type LocalMsg =
   | { t: "msg"; event: string; payload: unknown };
 
 /** BroadcastChannel stand-in for Supabase, emulating presence with heartbeats. */
-function createLocalTransport(roomId: string, myId: string, h: TransportHandlers): Transport {
+function createLocalTransport(
+  roomId: string,
+  myId: string,
+  h: TransportHandlers,
+): Transport {
   const bc = new BroadcastChannel(`klara-poker:${roomId}`);
   const peers = new Map<string, { p: Participant; seen: number }>();
   let me: Participant | null = null;
   let lastKey = "";
 
   const sync = () => {
-    const list = [...peers.values()].map((x) => x.p).filter((p) => p.id !== myId);
+    const list = [...peers.values()]
+      .map((x) => x.p)
+      .filter((p) => p.id !== myId);
     if (me) list.push(me);
-    const key = JSON.stringify([...list].sort((a, b) => a.id.localeCompare(b.id)));
+    const key = JSON.stringify(
+      [...list].sort((a, b) => a.id.localeCompare(b.id)),
+    );
     if (key === lastKey) return;
     lastKey = key;
     h.onSync(list);
@@ -214,7 +226,13 @@ export function electHost(participants: Participant[]): string | null {
 }
 
 function freshRound(): Partial<RoomState> {
-  return { roundId: newRoundId(), revealed: false, votes: null, voterNames: null, meme: null };
+  return {
+    roundId: newRoundId(),
+    revealed: false,
+    votes: null,
+    voterNames: null,
+    meme: null,
+  };
 }
 
 function initialState(hostId: string): RoomState {
@@ -248,7 +266,10 @@ function sessionNumber(key: string, fallback: () => number): number {
   }
 }
 
-function readVote(roomId: string): { vote: string | null; voteRound: string | null } {
+function readVote(roomId: string): {
+  vote: string | null;
+  voteRound: string | null;
+} {
   if (typeof window === "undefined") return { vote: null, voteRound: null };
   try {
     const raw = sessionStorage.getItem(`klara.vote.${roomId}`);
@@ -259,9 +280,16 @@ function readVote(roomId: string): { vote: string | null; voteRound: string | nu
   return { vote: null, voteRound: null };
 }
 
-function writeVote(roomId: string, vote: string | null, voteRound: string | null) {
+function writeVote(
+  roomId: string,
+  vote: string | null,
+  voteRound: string | null,
+) {
   try {
-    sessionStorage.setItem(`klara.vote.${roomId}`, JSON.stringify({ vote, voteRound }));
+    sessionStorage.setItem(
+      `klara.vote.${roomId}`,
+      JSON.stringify({ vote, voteRound }),
+    );
   } catch {
     /* ignore */
   }
@@ -277,7 +305,9 @@ export function useRoom(roomId: string, identity: Identity | null) {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [state, setState] = useState<RoomState | null>(null);
   const [ballot, setBallot] = useState(() => readVote(roomId));
-  const [joinedAt] = useState(() => sessionNumber(`klara.joined.${roomId}`, () => Date.now()));
+  const [joinedAt] = useState(() =>
+    sessionNumber(`klara.joined.${roomId}`, () => Date.now()),
+  );
 
   const transport = useRef<Transport | null>(null);
   const stateRef = useRef<RoomState | null>(null);
@@ -376,9 +406,15 @@ export function useRoom(roomId: string, identity: Identity | null) {
         } else if (event === "request-state") {
           const s = stateRef.current;
           if (!s) return;
-          const hostHere = participantsRef.current.some((p) => p.id === s.hostId);
+          const hostHere = participantsRef.current.some(
+            (p) => p.id === s.hostId,
+          );
           if (s.hostId === myId) t.send("state", s);
-          else if (!hostHere) setTimeout(() => t.send("state", stateRef.current), Math.random() * 400);
+          else if (!hostHere)
+            setTimeout(
+              () => t.send("state", stateRef.current),
+              Math.random() * 400,
+            );
         }
       },
     };
@@ -418,10 +454,14 @@ export function useRoom(roomId: string, identity: Identity | null) {
     if (me) transport.current?.track(me);
   }, [me]);
 
-  useEffect(() => writeVote(roomId, ballot.vote, ballot.voteRound), [roomId, ballot]);
+  useEffect(
+    () => writeVote(roomId, ballot.vote, ballot.voteRound),
+    [roomId, ballot],
+  );
 
   // Host left: after a grace period (refreshes), the longest-connected voter takes over.
-  const hostPresent = !!state && participants.some((p) => p.id === state.hostId);
+  const hostPresent =
+    !!state && participants.some((p) => p.id === state.hostId);
   useEffect(() => {
     if (!state || hostPresent || participants.length === 0) return;
     const timer = setTimeout(() => {
@@ -437,7 +477,10 @@ export function useRoom(roomId: string, identity: Identity | null) {
 
   /* -------------------------------------------------------------- actions */
 
-  const currentVotes = useCallback((): { votes: VoteMap; names: Record<string, string> } => {
+  const currentVotes = useCallback((): {
+    votes: VoteMap;
+    names: Record<string, string>;
+  } => {
     const s = stateRef.current!;
     const votes: VoteMap = {};
     const names: Record<string, string> = {};
@@ -476,11 +519,19 @@ export function useRoom(roomId: string, identity: Identity | null) {
     if (!s.memesOn || result.count === 0) return;
     const meme = await chooseMeme(result.outcome, s.roundId, s.shownGifIds);
     const now = stateRef.current;
-    if (!now || now.roundId !== s.roundId || !now.revealed || now.hostId !== myId) return;
+    if (
+      !now ||
+      now.roundId !== s.roundId ||
+      !now.revealed ||
+      now.hostId !== myId
+    )
+      return;
     commit((cur) => ({
       meme,
       shownGifIds:
-        meme.kind === "gif" ? [...cur.shownGifIds, meme.id].slice(-200) : cur.shownGifIds,
+        meme.kind === "gif"
+          ? [...cur.shownGifIds, meme.id].slice(-200)
+          : cur.shownGifIds,
     }));
   }, [commit, currentVotes, myId]);
 
@@ -489,13 +540,23 @@ export function useRoom(roomId: string, identity: Identity | null) {
   }, [commit]);
 
   const setDeck = useCallback(
-    (deck: DeckId) => commit((s) => (s.deck === deck ? {} : { ...freshRound(), deck })),
+    (deck: DeckId) =>
+      commit((s) => (s.deck === deck ? {} : { ...freshRound(), deck })),
     [commit],
   );
 
-  const setAutoReveal = useCallback((on: boolean) => commit(() => ({ autoReveal: on })), [commit]);
-  const setMemesOn = useCallback((on: boolean) => commit(() => ({ memesOn: on })), [commit]);
-  const handOver = useCallback((id: string) => commit(() => ({ hostId: id })), [commit]);
+  const setAutoReveal = useCallback(
+    (on: boolean) => commit(() => ({ autoReveal: on })),
+    [commit],
+  );
+  const setMemesOn = useCallback(
+    (on: boolean) => commit(() => ({ memesOn: on })),
+    [commit],
+  );
+  const handOver = useCallback(
+    (id: string) => commit(() => ({ hostId: id })),
+    [commit],
+  );
 
   const vote = useCallback(
     (value: string | null) => {
@@ -507,7 +568,10 @@ export function useRoom(roomId: string, identity: Identity | null) {
   );
 
   /** Switching to spectator takes your card off the table for good. */
-  const withdraw = useCallback(() => setBallot({ vote: null, voteRound: null }), []);
+  const withdraw = useCallback(
+    () => setBallot({ vote: null, voteRound: null }),
+    [],
+  );
 
   /* --------------------------------------------------------- derived data */
 
@@ -519,7 +583,10 @@ export function useRoom(roomId: string, identity: Identity | null) {
     [participants],
   );
   const spectators = useMemo(
-    () => participants.filter((p) => p.role === "spectator").sort((a, b) => a.joinedAt - b.joinedAt),
+    () =>
+      participants
+        .filter((p) => p.role === "spectator")
+        .sort((a, b) => a.joinedAt - b.joinedAt),
     [participants],
   );
   const hasVoted = useCallback(
@@ -534,7 +601,14 @@ export function useRoom(roomId: string, identity: Identity | null) {
     if (voters.length === 0 || votedCount < voters.length) return;
     const timer = setTimeout(() => void reveal(), 800);
     return () => clearTimeout(timer);
-  }, [isHost, state?.autoReveal, state?.revealed, voters.length, votedCount, reveal]);
+  }, [
+    isHost,
+    state?.autoReveal,
+    state?.revealed,
+    voters.length,
+    votedCount,
+    reveal,
+  ]);
 
   const myVote = me && state && me.voteRound === state.roundId ? me.vote : null;
 
@@ -549,7 +623,16 @@ export function useRoom(roomId: string, identity: Identity | null) {
     spectators,
     votedCount,
     hasVoted,
-    actions: { vote, withdraw, reveal, newRound, setDeck, setAutoReveal, setMemesOn, handOver },
+    actions: {
+      vote,
+      withdraw,
+      reveal,
+      newRound,
+      setDeck,
+      setAutoReveal,
+      setMemesOn,
+      handOver,
+    },
   };
 }
 

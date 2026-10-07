@@ -35,7 +35,7 @@ export function Segmented<T extends string>({
       aria-label={ariaLabel}
       aria-labelledby={labelledBy}
       title={title}
-      className={`relative inline-flex rounded-full border border-line bg-surface p-1 ${
+      className={`relative inline-flex rounded-full bg-surface-raised p-1 ${
         wide ? "w-full" : ""
       } ${disabled ? "opacity-50" : ""}`}
     >
@@ -51,12 +51,12 @@ export function Segmented<T extends string>({
             onClick={() => !active && onChange(o.value)}
             className={`relative z-0 flex h-8 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-semibold whitespace-nowrap transition-colors disabled:cursor-not-allowed ${
               wide ? "flex-1" : ""
-            } ${active ? "text-accent-ink" : "text-muted hover:text-text"}`}
+            } ${active ? "text-text" : "text-muted hover:text-text"}`}
           >
             {active && (
               <motion.span
                 layoutId={`seg-${id}`}
-                className="absolute inset-0 -z-10 rounded-full bg-accent"
+                className="absolute inset-0 -z-10 rounded-full bg-surface shadow-soft"
                 transition={{ type: "spring", stiffness: 500, damping: 36 }}
               />
             )}

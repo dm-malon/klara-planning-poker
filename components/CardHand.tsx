@@ -32,8 +32,10 @@ export function CardHand({
 
   const onKeyDown = (e: React.KeyboardEvent, i: number) => {
     let next = -1;
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (i + 1) % cards.length;
-    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (i - 1 + cards.length) % cards.length;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown")
+      next = (i + 1) % cards.length;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp")
+      next = (i - 1 + cards.length) % cards.length;
     else if (e.key === "Home") next = 0;
     else if (e.key === "End") next = cards.length - 1;
     if (next >= 0) {
@@ -71,14 +73,20 @@ export function CardHand({
               whileHover={disabled ? undefined : { y: isSelected ? -26 : -10 }}
               whileTap={disabled ? undefined : { scale: 0.96 }}
               transition={{ type: "spring", stiffness: 420, damping: 24 }}
-              className={`card-face gloss relative h-24 w-16 shrink-0 snap-center rounded-xl font-display font-extrabold disabled:cursor-not-allowed disabled:opacity-40 sm:h-28 sm:w-[4.5rem] ${
-                isSelected ? "ring-4 ring-accent" : ""
+              className={`gloss relative h-24 w-16 shrink-0 snap-center rounded-2xl font-display font-bold disabled:cursor-not-allowed disabled:opacity-40 sm:h-28 sm:w-[4.75rem] ${
+                isSelected
+                  ? "accent-gradient text-white shadow-[0_14px_28px_-10px_var(--accent)]"
+                  : "card-face hover:border-accent/50"
               }`}
             >
-              <span className="absolute top-1.5 left-2 text-xs leading-none">{card.label}</span>
+              <span className="absolute top-1.5 left-2 text-xs leading-none">
+                {card.label}
+              </span>
               <span
                 className={`absolute inset-0 grid place-items-center ${
-                  card.label.length > 2 ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"
+                  card.label.length > 2
+                    ? "text-xl sm:text-2xl"
+                    : "text-2xl sm:text-3xl"
                 }`}
               >
                 {card.label}
@@ -86,7 +94,11 @@ export function CardHand({
               {hint && (
                 <span
                   aria-hidden
-                  className="absolute right-1.5 bottom-1.5 hidden rounded bg-card-ink/10 px-1 font-mono text-[10px] leading-4 font-medium text-card-ink/60 sm:block"
+                  className={`absolute right-1.5 bottom-1.5 hidden rounded px-1 font-mono text-[10px] leading-4 font-medium sm:block ${
+                    isSelected
+                      ? "bg-white/20 text-white/80"
+                      : "bg-surface-raised text-faint"
+                  }`}
                 >
                   {hint}
                 </span>

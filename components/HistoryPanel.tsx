@@ -9,7 +9,8 @@ import { formatNumber } from "@/lib/stats";
 
 function resultText(h: HistoryEntry): string {
   if (h.average === null) return "no numbers";
-  if (h.deck === "story") return `${findCard("story", h.suggested)?.label ?? "—"} SP`;
+  if (h.deck === "story")
+    return `${findCard("story", h.suggested)?.label ?? "—"} SP`;
   return `${formatNumber(h.average)}h ≈ ${formatNumber(Math.round((h.days ?? 0) * 10) / 10)}d`;
 }
 
@@ -34,7 +35,7 @@ export function HistoryPanel({
       {open && (
         <>
           <motion.div
-            className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+            className="fixed inset-0 z-40 bg-[rgba(12,12,20,0.25)] lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -49,7 +50,7 @@ export function HistoryPanel({
             className="fixed inset-y-0 left-0 z-50 flex w-[min(340px,88vw)] flex-col border-r border-line bg-surface-strong shadow-2xl"
           >
             <div className="flex items-center justify-between border-b border-line px-5 py-4">
-              <h2 className="font-display text-lg font-extrabold">Round history</h2>
+              <h2 className="font-display text-lg font-bold">Round history</h2>
               <button
                 onClick={onClose}
                 aria-label="Close history"
@@ -65,19 +66,27 @@ export function HistoryPanel({
                 </li>
               )}
               {history.map((h, i) => (
-                <li key={h.roundId} className="rounded-2xl border border-line bg-surface p-3">
+                <li
+                  key={h.roundId}
+                  className="rounded-2xl border border-line bg-surface p-3"
+                >
                   <div className="flex items-start justify-between gap-2">
                     <p className="min-w-0 truncate text-sm font-semibold">
-                      Round <span className="font-mono">#{history.length - i}</span>
+                      Round{" "}
+                      <span className="font-mono">#{history.length - i}</span>
                     </p>
-                    <span className="shrink-0 font-display text-lg leading-none font-extrabold text-accent">
+                    <span className="shrink-0 font-display text-lg leading-none font-bold text-accent">
                       {resultText(h)}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted">
-                    {DECKS[h.deck].name} · {h.voteCount} vote{h.voteCount === 1 ? "" : "s"} ·{" "}
-                    {OUTCOME_LABEL[h.outcome]} ·{" "}
-                    {new Date(h.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {DECKS[h.deck].name} · {h.voteCount} vote
+                    {h.voteCount === 1 ? "" : "s"} · {OUTCOME_LABEL[h.outcome]}{" "}
+                    ·{" "}
+                    {new Date(h.at).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </p>
                 </li>
               ))}

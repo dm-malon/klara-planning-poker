@@ -39,12 +39,23 @@ export function HostPanel({
         ariaLabel="Estimation deck"
         value={state.deck}
         disabled={deckLocked}
-        title={deckLocked ? "Votes are in — reveal or start a new round to change the deck" : undefined}
+        title={
+          deckLocked
+            ? "Votes are in — reveal or start a new round to change the deck"
+            : undefined
+        }
         onChange={onDeck}
-        options={(Object.keys(DECKS) as DeckId[]).map((id) => ({ value: id, label: DECKS[id].name }))}
+        options={(Object.keys(DECKS) as DeckId[]).map((id) => ({
+          value: id,
+          label: DECKS[id].name,
+        }))}
       />
 
-      <Switch label="Auto-reveal" checked={state.autoReveal} onChange={onAutoReveal} />
+      <Switch
+        label="Auto-reveal"
+        checked={state.autoReveal}
+        onChange={onAutoReveal}
+      />
       <Switch label="Memes" checked={state.memesOn} onChange={onMemes} />
 
       {others.length > 0 && (
@@ -88,7 +99,9 @@ function Switch({
     >
       <span
         className={`relative h-6 w-10 rounded-full border transition-colors ${
-          checked ? "border-accent bg-accent" : "border-line-strong bg-surface-raised"
+          checked
+            ? "border-accent bg-accent"
+            : "border-line-strong bg-surface-raised"
         }`}
       >
         <span

@@ -35,7 +35,7 @@ export function JoinModal({
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 grid place-items-center bg-[rgba(12,12,20,0.35)] p-4 backdrop-blur-sm"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -59,7 +59,10 @@ export function JoinModal({
         <div className="mb-5 flex items-center gap-3">
           <Avatar name={clean || "?"} size="lg" />
           <div className="min-w-0">
-            <h2 id="join-title" className="font-display text-2xl font-extrabold tracking-tight">
+            <h2
+              id="join-title"
+              className="font-display text-2xl font-bold tracking-tight"
+            >
               {mode === "join" ? "Take a seat" : "Your profile"}
             </h2>
             <p className="truncate font-mono text-xs text-muted">{roomId}</p>
@@ -86,7 +89,12 @@ export function JoinModal({
         <p className="mb-1.5 text-sm font-semibold" id="role-label">
           Join as
         </p>
-        <RoleSwitch value={role} onChange={setRole} labelledBy="role-label" wide />
+        <RoleSwitch
+          value={role}
+          onChange={setRole}
+          labelledBy="role-label"
+          wide
+        />
         <p className="mt-2 text-xs text-muted">
           {role === "voter"
             ? "You'll get a hand of cards and vote each round."

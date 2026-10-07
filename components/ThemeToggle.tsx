@@ -6,15 +6,19 @@ type Theme = "dark" | "light";
 
 function subscribe(cb: () => void) {
   const obs = new MutationObserver(cb);
-  obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  obs.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
+  });
   return () => obs.disconnect();
 }
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
   const theme = useSyncExternalStore<Theme>(
     subscribe,
-    () => (document.documentElement.dataset.theme === "light" ? "light" : "dark"),
-    () => "dark",
+    () =>
+      document.documentElement.dataset.theme === "dark" ? "dark" : "light",
+    () => "light",
   );
   const next: Theme = theme === "dark" ? "light" : "dark";
 

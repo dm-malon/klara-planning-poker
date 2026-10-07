@@ -4,7 +4,12 @@ import confetti from "canvas-confetti";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DECKS } from "@/lib/decks";
-import { loadIdentity, saveIdentity, type Identity, type Role } from "@/lib/identity";
+import {
+  loadIdentity,
+  saveIdentity,
+  type Identity,
+  type Role,
+} from "@/lib/identity";
 import { realtimeMode, useRoom } from "@/lib/realtime";
 import { computeResult } from "@/lib/stats";
 import { toast } from "@/lib/toast";
@@ -21,7 +26,11 @@ const perTab = realtimeMode === "local";
 
 function isTyping(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
-  return !!el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName));
+  return (
+    !!el &&
+    (el.isContentEditable ||
+      ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))
+  );
 }
 
 export function Room({ roomId }: { roomId: string }) {
@@ -51,7 +60,10 @@ export function Room({ roomId }: { roomId: string }) {
   const { state, me, myVote, isHost, actions } = room;
 
   const result = useMemo(
-    () => (state?.revealed && state.votes ? computeResult(state.deck, state.votes) : null),
+    () =>
+      state?.revealed && state.votes
+        ? computeResult(state.deck, state.votes)
+        : null,
     [state],
   );
 
@@ -61,14 +73,27 @@ export function Room({ roomId }: { roomId: string }) {
     if (!state || !result || result.outcome !== "consensus") return;
     if (confettiRound.current === state.roundId) return;
     confettiRound.current = state.roundId;
-    const revealedAt = state.history[0]?.roundId === state.roundId ? state.history[0].at : 0;
+    const revealedAt =
+      state.history[0]?.roundId === state.roundId ? state.history[0].at : 0;
     if (Date.now() - revealedAt > 15000) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const colors = ["#f7c948", "#34d399", "#4f46e5", "#c026d3", "#ffffff"];
+    const colors = ["#4f46ff", "#8b5cf6", "#0ea5e9", "#10b981", "#f43f5e"];
     const t = setTimeout(() => {
       confetti({ particleCount: 140, spread: 80, origin: { y: 0.55 }, colors });
-      confetti({ particleCount: 60, angle: 60, spread: 60, origin: { x: 0, y: 0.7 }, colors });
-      confetti({ particleCount: 60, angle: 120, spread: 60, origin: { x: 1, y: 0.7 }, colors });
+      confetti({
+        particleCount: 60,
+        angle: 60,
+        spread: 60,
+        origin: { x: 0, y: 0.7 },
+        colors,
+      });
+      confetti({
+        particleCount: 60,
+        angle: 120,
+        spread: 60,
+        origin: { x: 1, y: 0.7 },
+        colors,
+      });
     }, 700);
     return () => clearTimeout(t);
   }, [state, result]);
@@ -95,7 +120,15 @@ export function Room({ roomId }: { roomId: string }) {
   // Keyboard: 1–9/0 pick a card, ? and C the specials, Esc clears; host: R reveal, N new round.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target) || !state || !deck) return;
+      if (
+        e.metaKey ||
+        e.ctrlKey ||
+        e.altKey ||
+        isTyping(e.target) ||
+        !state ||
+        !deck
+      )
+        return;
       if (document.querySelector('[role="dialog"]')) return;
       const key = e.key.toLowerCase();
       if (isHost && key === "r" && !state.revealed && room.votedCount > 0) {
@@ -111,7 +144,9 @@ export function Room({ roomId }: { roomId: string }) {
         actions.vote(null);
         return;
       }
-      const card = deck.cards.find((c, i) => shortcutFor(c, i).toLowerCase() === key);
+      const card = deck.cards.find(
+        (c, i) => shortcutFor(c, i).toLowerCase() === key,
+      );
       if (card) {
         e.preventDefault();
         actions.vote(myVote === card.value ? null : card.value);
@@ -135,17 +170,23 @@ export function Room({ roomId }: { roomId: string }) {
         onRole={(role: Role) => {
           if (role === "spectator") actions.withdraw();
           updateIdentity({ role });
-          toast(role === "spectator" ? "You're spectating now" : "You're voting now", role === "spectator" ? "👁" : "🃏");
+          toast(
+            role === "spectator"
+              ? "You're spectating now"
+              : "You're voting now",
+            role === "spectator" ? "👁" : "🃏",
+          );
         }}
         onEditProfile={() => setEditing(true)}
         onHistory={() => setHistoryOpen((o) => !o)}
       />
 
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 px-4 pt-5 pb-48 sm:px-6">
+      <main className="mx-auto flex w-full max-w-[1320px] flex-1 flex-col gap-5 px-4 pt-5 pb-48 sm:px-6">
         {realtimeMode === "local" && (
           <p className="rounded-xl border border-dashed border-line-strong px-4 py-2 text-center text-xs text-muted">
-            <strong className="text-text">Local demo mode</strong> — no Supabase keys, so this room
-            only syncs between tabs in this browser. Open the invite link in another tab to play.
+            <strong className="text-text">Local demo mode</strong> — no Supabase
+            keys, so this room only syncs between tabs in this browser. Open the
+            invite link in another tab to play.
           </p>
         )}
 
@@ -164,12 +205,11 @@ export function Room({ roomId }: { roomId: string }) {
               />
             )}
 
-            <div
-              className={`grid flex-1 items-start gap-6 ${
-                result ? "lg:grid-cols-[minmax(0,1.5fr)_minmax(340px,1fr)]" : ""
-              }`}
-            >
-              <motion.div layout="position" className="flex flex-col justify-center pt-2 md:pt-6">
+            <div className="flex flex-1 flex-col gap-6">
+              <motion.div
+                layout="position"
+                className="flex flex-col justify-center md:pt-2"
+              >
                 <PokerTable
                   state={state}
                   voters={room.voters}
@@ -183,7 +223,11 @@ export function Room({ roomId }: { roomId: string }) {
                   onNewRound={actions.newRound}
                 />
               </motion.div>
-              <AnimatePresence>{result && <Results key={state.roundId} state={state} result={result} />}</AnimatePresence>
+              <AnimatePresence>
+                {result && (
+                  <Results key={state.roundId} state={state} result={result} />
+                )}
+              </AnimatePresence>
             </div>
           </>
         ) : (
@@ -195,13 +239,22 @@ export function Room({ roomId }: { roomId: string }) {
                     <motion.span
                       key={i}
                       className="card-back block h-14 w-10 rounded-lg"
-                      animate={{ y: [0, -12, 0], rotate: [0, i % 2 ? 6 : -6, 0] }}
-                      transition={{ repeat: Infinity, duration: 1, delay: i * 0.15 }}
+                      animate={{
+                        y: [0, -12, 0],
+                        rotate: [0, i % 2 ? 6 : -6, 0],
+                      }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 1,
+                        delay: i * 0.15,
+                      }}
                     />
                   ))}
                 </div>
                 <p className="font-display font-bold">
-                  {room.status === "error" ? "Can't reach the table. Retrying…" : "Shuffling the deck…"}
+                  {room.status === "error"
+                    ? "Can't reach the table. Retrying…"
+                    : "Shuffling the deck…"}
                 </p>
               </div>
             </div>
@@ -211,7 +264,7 @@ export function Room({ roomId }: { roomId: string }) {
 
       {/* Bottom sheet: the hand of cards */}
       {state && deck && identity?.name && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-bg/85 backdrop-blur-md">
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/90 shadow-[0_-10px_30px_-20px_rgba(12,12,20,0.25)] backdrop-blur-md">
           <div className="mx-auto max-w-5xl">
             {isVoter ? (
               <CardHand
@@ -219,7 +272,11 @@ export function Room({ roomId }: { roomId: string }) {
                 cards={deck.cards}
                 selected={myVote}
                 disabled={!canVote}
-                disabledReason={state.revealed ? "Cards are revealed — waiting for a new round" : undefined}
+                disabledReason={
+                  state.revealed
+                    ? "Cards are revealed — waiting for a new round"
+                    : undefined
+                }
                 onSelect={actions.vote}
               />
             ) : (
@@ -240,9 +297,16 @@ export function Room({ roomId }: { roomId: string }) {
         </div>
       )}
 
-      {state?.revealed && (state.memesOn || state.meme) && result && result.count > 0 && (
-        <MemeCard key={state.roundId} meme={state.meme} pending={state.memesOn && !state.meme} />
-      )}
+      {state?.revealed &&
+        (state.memesOn || state.meme) &&
+        result &&
+        result.count > 0 && (
+          <MemeCard
+            key={state.roundId}
+            meme={state.meme}
+            pending={state.memesOn && !state.meme}
+          />
+        )}
 
       <HistoryPanel
         open={historyOpen}

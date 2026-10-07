@@ -3,7 +3,11 @@
 import { motion, useReducedMotion } from "framer-motion";
 
 const SIZE = {
-  seat: { box: "h-[4.25rem] w-12", corner: "text-[10px]", center: "text-xl" },
+  seat: {
+    box: "h-[5.25rem] w-[3.75rem]",
+    corner: "text-[11px]",
+    center: "text-2xl",
+  },
   mini: { box: "h-11 w-8", corner: "hidden", center: "text-sm" },
 };
 
@@ -20,13 +24,23 @@ export function CardFace({
   const s = SIZE[size];
   return (
     <div
-      className={`card-face absolute inset-0 rounded-[10px] font-display font-extrabold ${
-        tone === "low" ? "ring-[3px] ring-low" : tone === "high" ? "ring-[3px] ring-high" : ""
+      className={`card-face absolute inset-0 rounded-xl font-display font-bold ${
+        tone === "low"
+          ? "ring-[3px] ring-low"
+          : tone === "high"
+            ? "ring-[3px] ring-high"
+            : ""
       }`}
     >
-      <span className={`absolute top-1 left-1.5 leading-none ${s.corner}`}>{label}</span>
-      <span className={`absolute inset-0 grid place-items-center ${s.center}`}>{label}</span>
-      <span className={`absolute right-1.5 bottom-1 rotate-180 leading-none ${s.corner}`}>
+      <span className={`absolute top-1 left-1.5 leading-none ${s.corner}`}>
+        {label}
+      </span>
+      <span className={`absolute inset-0 grid place-items-center ${s.center}`}>
+        {label}
+      </span>
+      <span
+        className={`absolute right-1.5 bottom-1 rotate-180 leading-none ${s.corner}`}
+      >
         {label}
       </span>
     </div>
@@ -57,7 +71,7 @@ export function SeatCard({
   if (!voted && !(revealed && label)) {
     return (
       <div
-        className={`${box} rounded-[10px] border-2 border-dashed border-white/25 bg-black/10`}
+        className={`${box} rounded-xl border-[1.5px] border-dashed border-line-strong bg-surface-raised/60`}
         aria-hidden
       />
     );
@@ -76,10 +90,16 @@ export function SeatCard({
         initial={false}
         animate={{ rotateY: faceUp ? 180 : 0 }}
         transition={
-          reduce ? { duration: 0 } : { duration: 0.6, delay: faceUp ? delay : 0, ease: [0.3, 0.7, 0.2, 1] }
+          reduce
+            ? { duration: 0 }
+            : {
+                duration: 0.6,
+                delay: faceUp ? delay : 0,
+                ease: [0.3, 0.7, 0.2, 1],
+              }
         }
       >
-        <div className="card-back backface-hidden absolute inset-0 rounded-[10px]" />
+        <div className="card-back backface-hidden absolute inset-0 rounded-xl" />
         <div className="backface-hidden absolute inset-0 [transform:rotateY(180deg)]">
           <CardFace label={label ?? ""} size={size} tone={tone} />
         </div>

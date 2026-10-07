@@ -50,9 +50,13 @@ export function RoomHeader({
   const deck = state ? DECKS[state.deck] : null;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-bg/80 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-6">
-        <Link href="/" className="mr-auto rounded-md sm:mr-0" aria-label="KLARA PLANNING POKER home">
+    <header className="sticky top-0 z-30 border-b border-line bg-surface/85 backdrop-blur-md">
+      <div className="mx-auto flex max-w-[1320px] flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-6">
+        <Link
+          href="/"
+          className="mr-auto rounded-md sm:mr-0"
+          aria-label="KLARA PLANNING POKER home"
+        >
           <Wordmark />
         </Link>
 
@@ -66,14 +70,14 @@ export function RoomHeader({
             <span className="max-w-[9rem] truncate">{roomId}</span>
             <button
               onClick={copyLink}
-              className="h-7 rounded-full bg-surface-raised px-3 font-sans text-xs font-semibold transition hover:bg-accent hover:text-accent-ink"
+              className="h-7 rounded-full bg-text px-3 font-sans text-xs font-semibold text-surface transition hover:opacity-85"
             >
               Copy invite link
             </button>
           </span>
           {deck && (
             <span
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-accent/40 bg-accent-soft px-3 text-xs font-bold text-accent"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-accent-soft px-3 text-xs font-semibold text-accent"
               aria-label={`Estimation mode: ${deck.name}`}
             >
               <span aria-hidden>{deck.id === "story" ? "🃏" : "⏱"}</span>
