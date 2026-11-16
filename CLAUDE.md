@@ -17,8 +17,13 @@ There's no test suite yet. Check behaviour by opening one room in several tabs.
 ## Architecture
 
 - **No database, no server state.** Each room is a Realtime channel `klara-poker:<roomId>`.
-  - Presence carries each `Participant` (`id, name, icon, role, joinedAt, vote, voteRound`).
+  - Presence carries each `Participant` (`id, name, icon, role, joinedAt`), **without votes**.
     `icon` must be one of `AVATAR_ICONS` in `lib/avatar.ts`; anything else renders as initials.
+    Supabase closes a client's channel after ~5 presence updates in a short window ("Client
+    presence rate limit exceeded"), so presence is only re-tracked on join or profile changes,
+    through a small token budget. The transport rejoins automatically after any channel close.
+  - Votes travel by the `vote` broadcast (`id, vote, voteRound, voteAt`); the newest `voteAt`
+    wins. Each client re-sends its vote when it comes online and when someone (re)joins.
   - Broadcast carries the host-owned `RoomState`. Its events are `state` and `request-state`.
   - The `fx` broadcast event carries one-off fun effects (throw / poke / react, `lib/fx.ts`). These
     never touch `RoomState`. Receivers validate them with `parseFx()`, senders are rate-limited, and
@@ -29,7 +34,8 @@ There's no test suite yet. Check behaviour by opening one room in several tabs.
 - **Votes count only when `voteRound === state.roundId`.** A new round means a new `roundId`, so
   nobody has to clear their vote. At reveal the host snapshots the votes into `state.votes`.
 - **Host election**: if `hostId` is missing from presence for longer than `HOST_GRACE_MS`, the
-  client that `electHost()` picks (longest-connected voter) takes over.
+  client that `electHost()` picks (longest-connected voter) takes over. `ownerId` (set on creation
+  and hand-over) is the home host: when they return, the stand-in hands the crown back.
 - **Transport**: Supabase when the `NEXT_PUBLIC_SUPABASE_*` env vars are set. Otherwise a
   `BroadcastChannel` stand-in (`realtimeMode === "local"`) where identity is per tab
   (sessionStorage), so several tabs act as different people.

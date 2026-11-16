@@ -1,6 +1,10 @@
 "use client";
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  createClient,
+  type RealtimeChannel,
+  type SupabaseClient,
+} from "@supabase/supabase-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DeckId } from "./decks";
 import { createRateLimiter, parseFx, type Fx } from "./fx";
@@ -22,7 +26,8 @@ export interface Participant {
   vote: string | null;
   /** Round the vote belongs to — votes from older rounds are ignored. */
   voteRound: string | null;
-  /** When the vote was cast; the newer of presence and broadcast wins. */
+  /** When the vote was cast; the newest vote seen wins. Votes travel by the
+   *  `vote` broadcast, not presence (presence is heavily rate-limited). */
   voteAt?: number;
 }
 
@@ -108,45 +113,94 @@ function createSupabaseTransport(
   h: TransportHandlers,
 ): Transport {
   const client = getSupabase();
-  const ch = client.channel(`klara-poker:${roomId}`, {
-    config: { presence: { key: myId }, broadcast: { self: false } },
-  });
+  let ch: RealtimeChannel | null = null;
   let subscribed = false;
+  let closed = false;
+  let retry = 0;
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Supabase closes a channel outright after ~5 presence updates in a short
+  // window ("Client presence rate limit exceeded"). So presence carries only
+  // who's here (votes go by broadcast), unchanged records aren't re-sent, and
+  // updates spend from a small budget that refills slowly.
   let pending: Participant | null = null;
-  let lastTrack = 0;
+  let sentKey = "";
+  let tokens = TRACK_BURST;
+  let lastRefill = Date.now();
   let trackTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // Presence is rate-limited server-side: rapid re-tracks get coalesced or even
-  // dropped. Votes travel by broadcast, so presence only needs the final value.
   const flushTrack = () => {
     trackTimer = null;
-    if (!subscribed || !pending) return;
-    lastTrack = Date.now();
+    if (!subscribed || !ch || !pending) return;
+    const key = JSON.stringify(pending);
+    if (key === sentKey) return;
+    const now = Date.now();
+    const refill = Math.floor((now - lastRefill) / TRACK_REFILL_MS);
+    if (refill > 0) {
+      tokens = Math.min(TRACK_BURST, tokens + refill);
+      lastRefill += refill * TRACK_REFILL_MS;
+    }
+    if (tokens < 1) {
+      trackTimer = setTimeout(
+        flushTrack,
+        lastRefill + TRACK_REFILL_MS - now + 50,
+      );
+      return;
+    }
+    tokens -= 1;
+    sentKey = key;
     void ch.track(pending);
   };
   const scheduleTrack = () => {
-    if (trackTimer) return;
-    const wait = Math.max(0, lastTrack + TRACK_INTERVAL_MS - Date.now());
-    trackTimer = setTimeout(flushTrack, wait);
+    if (!trackTimer) trackTimer = setTimeout(flushTrack, 150);
   };
 
-  ch.on("presence", { event: "sync" }, () => {
-    const state = ch.presenceState<Participant>();
-    // A client id can have several metas (two tabs); the latest one wins.
-    h.onSync(Object.values(state).map((metas) => metas[metas.length - 1]));
-  });
-  for (const event of EVENTS) {
-    ch.on("broadcast", { event }, ({ payload }) => h.onMessage(event, payload));
-  }
-  ch.subscribe((status) => {
-    if (status === "SUBSCRIBED") {
-      subscribed = true;
-      h.onStatus("online");
-      scheduleTrack();
-    } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-      h.onStatus("error");
+  const connect = () => {
+    const channel = client.channel(`klara-poker:${roomId}`, {
+      config: { presence: { key: myId }, broadcast: { self: false } },
+    });
+    ch = channel;
+    channel.on("presence", { event: "sync" }, () => {
+      const state = channel.presenceState<Participant>();
+      // A client id can have several metas (two tabs); the latest one wins.
+      h.onSync(Object.values(state).map((metas) => metas[metas.length - 1]));
+    });
+    for (const event of EVENTS) {
+      channel.on("broadcast", { event }, ({ payload }) =>
+        h.onMessage(event, payload),
+      );
     }
-  });
+    channel.subscribe((status) => {
+      if (closed || ch !== channel) return;
+      if (status === "SUBSCRIBED") {
+        subscribed = true;
+        retry = 0;
+        sentKey = "";
+        h.onStatus("online");
+        scheduleTrack();
+        return;
+      }
+      // Errors, timeouts and server-side closes all mean the same: rejoin.
+      // (A silently closed channel used to leave the tab frozen but "online".)
+      subscribed = false;
+      ch = null;
+      h.onStatus(
+        status === "CHANNEL_ERROR" || status === "TIMED_OUT"
+          ? "error"
+          : "connecting",
+      );
+      void client.removeChannel(channel);
+      if (!retryTimer) {
+        const wait = Math.min(1000 * 2 ** retry, 15000);
+        retry += 1;
+        retryTimer = setTimeout(() => {
+          retryTimer = null;
+          if (!closed) connect();
+        }, wait);
+      }
+    });
+  };
+  connect();
 
   return {
     track(p) {
@@ -154,12 +208,16 @@ function createSupabaseTransport(
       if (subscribed) scheduleTrack();
     },
     send(event, payload) {
-      if (subscribed) void ch.send({ type: "broadcast", event, payload });
+      if (subscribed && ch)
+        void ch.send({ type: "broadcast", event, payload });
     },
     close() {
+      closed = true;
       subscribed = false;
       if (trackTimer) clearTimeout(trackTimer);
-      void client.removeChannel(ch);
+      if (retryTimer) clearTimeout(retryTimer);
+      if (ch) void client.removeChannel(ch);
+      ch = null;
     },
   };
 }
@@ -336,6 +394,11 @@ function parseVote(payload: unknown): (Ballot & { id: string }) | null {
   };
 }
 
+/** My presence record without the ballot: votes travel by broadcast only. */
+function presenceOf(me: Participant): Participant {
+  return { ...me, vote: null, voteRound: null, voteAt: 0 };
+}
+
 /**
  * Presence with the freshest known votes on top: my own record is always
  * authoritative, and a broadcast vote beats a presence vote that's older.
@@ -358,7 +421,9 @@ function mergeVotes(
 
 /** Long enough to cover a refresh: page load, reconnect, and presence lag. */
 const HOST_GRACE_MS = 8000;
-const TRACK_INTERVAL_MS = 400;
+/** Presence update budget: a few at once, then one per refill period. */
+const TRACK_BURST = 3;
+const TRACK_REFILL_MS = 8000;
 const CONNECT_TIMEOUT_MS = 12000;
 const LEAVE_TOAST_DELAY_MS = 2500;
 
@@ -497,8 +562,6 @@ export function useRoom(roomId: string, identity: Identity | null) {
 
         participantsRef.current = list;
         setPresence(list);
-        for (const id of overlayRef.current.keys())
-          if (!ids.has(id)) overlayRef.current.delete(id);
 
         // Late joiners get the full current state from the host, and my vote from me.
         const s = stateRef.current;
@@ -525,6 +588,8 @@ export function useRoom(roomId: string, identity: Identity | null) {
         } else if (event === "state") {
           applyState(payload as RoomState);
         } else if (event === "request-state") {
+          // Someone (re)joined: let them know my vote without waiting for presence.
+          sendMyVote();
           const s = stateRef.current;
           if (!s) return;
           const from = (payload as { from?: unknown } | null)?.from;
@@ -548,9 +613,9 @@ export function useRoom(roomId: string, identity: Identity | null) {
         ? createSupabaseTransport(roomId, myId, handlers)
         : createLocalTransport(roomId, myId, handlers);
     transport.current = t;
-    if (meRef.current) t.track(meRef.current);
+    if (meRef.current) t.track(presenceOf(meRef.current));
 
-    // Votes go by broadcast too: presence is rate-limited and lags by seconds.
+    // Votes go by broadcast only: presence is rate-limited and lags by seconds.
     function sendMyVote() {
       const m = meRef.current;
       if (m?.role === "voter" && m.voteAt)
@@ -584,10 +649,11 @@ export function useRoom(roomId: string, identity: Identity | null) {
     };
   }, [connected, myId, roomId, applyState]);
 
-  // Publish presence whenever my record changes.
+  // Publish presence whenever my record changes. Votes stay out of presence
+  // (they go by broadcast), so voting never spends the presence rate limit.
   useEffect(() => {
     meRef.current = me;
-    if (me) transport.current?.track(me);
+    if (me) transport.current?.track(presenceOf(me));
   }, [me]);
 
   useEffect(() => writeVote(roomId, ballot), [roomId, ballot]);
