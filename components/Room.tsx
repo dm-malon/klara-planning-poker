@@ -224,7 +224,11 @@ export function Room({ roomId }: { roomId: string }) {
         onHistory={() => setHistoryOpen((o) => !o)}
       />
 
-      <main className="mx-auto flex w-full max-w-[1320px] flex-1 flex-col gap-5 px-4 pt-5 pb-48 sm:px-6">
+      <main
+        className={`mx-auto flex w-full max-w-[1320px] flex-1 flex-col gap-5 px-4 pt-5 sm:px-6 ${
+          state?.revealed ? "pb-28" : "pb-48"
+        }`}
+      >
         {realtimeMode === "local" && (
           <p className="rounded-xl border border-dashed border-line-strong px-4 py-2 text-center text-xs text-muted">
             <strong className="text-text">Local demo mode</strong> — no Supabase
@@ -320,17 +324,27 @@ export function Room({ roomId }: { roomId: string }) {
           {/* Anchored to the dock's top edge, so it sits right above it whatever its height. */}
           <ReactionBar onReact={(emoji) => fire({ kind: "react", emoji })} />
           <div className="mx-auto max-w-5xl">
-            {isVoter ? (
+            {isVoter && state.revealed ? (
+              // Cards can't change after the reveal, so the dock shrinks to one
+              // line and leaves the room to the results.
+              <p className="flex items-center justify-center gap-2 px-4 py-3 text-center text-xs font-semibold text-muted">
+                {myVote ? (
+                  <>
+                    Your card:
+                    <span className="grid h-7 min-w-5 place-items-center rounded-md border border-line-strong bg-surface px-1 font-display text-sm font-bold text-text">
+                      {findCard(state.deck, myVote)?.label ?? myVote}
+                    </span>
+                    <span aria-hidden>·</span>
+                  </>
+                ) : null}
+                <span>Waiting for a new round</span>
+              </p>
+            ) : isVoter ? (
               <CardHand
                 key={state.deck}
                 cards={deck.cards}
                 selected={myVote}
                 disabled={!canVote}
-                disabledReason={
-                  state.revealed
-                    ? "Cards are revealed — waiting for a new round"
-                    : undefined
-                }
                 onSelect={actions.vote}
               />
             ) : (

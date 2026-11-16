@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useEffect, useRef } from "react";
 import { DECKS, findCard } from "@/lib/decks";
 import { OUTCOME_LABEL } from "@/lib/memes";
 import type { RoomState } from "@/lib/realtime";
@@ -30,6 +31,27 @@ export function Results({
   icons?: Record<string, string | null | undefined>;
 }) {
   const deck = DECKS[state.deck];
+  const ref = useRef<HTMLElement>(null);
+
+  // On short screens the results start below the fold: bring them into view
+  // once they've animated in (only if they aren't visible already).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const el = ref.current;
+      if (!el) return;
+      const { top } = el.getBoundingClientRect();
+      if (top < window.innerHeight * 0.6) return;
+      const reduce = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      el.scrollIntoView({
+        block: "start",
+        behavior: reduce ? "auto" : "smooth",
+      });
+    }, 900);
+    return () => clearTimeout(t);
+  }, []);
+
   const names = state.voterNames ?? {};
   const votes = state.votes ?? {};
   const unit = deck.id === "hourly" ? "h" : "";
@@ -42,11 +64,12 @@ export function Results({
 
   return (
     <motion.section
+      ref={ref}
       aria-label="Round results"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.6, type: "spring", stiffness: 200, damping: 24 }}
-      className="mx-auto w-full max-w-[1240px] rounded-3xl border border-line bg-surface p-5 shadow-soft sm:p-6"
+      className="mx-auto w-full max-w-[1240px] scroll-mt-28 rounded-3xl border border-line bg-surface p-5 shadow-soft sm:p-6"
     >
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="font-display text-xl font-bold tracking-tight">
