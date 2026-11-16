@@ -22,6 +22,15 @@ export interface Participant {
   vote: string | null;
   /** Round the vote belongs to — votes from older rounds are ignored. */
   voteRound: string | null;
+  /** When the vote was cast; the newer of presence and broadcast wins. */
+  voteAt?: number;
+}
+
+/** A vote as carried by the `vote` broadcast (presence alone lags by seconds). */
+interface Ballot {
+  vote: string | null;
+  voteRound: string | null;
+  voteAt: number;
 }
 
 export interface HistoryEntry {
@@ -40,6 +49,12 @@ export interface RoomState {
   version: number;
   updatedAt: number;
   hostId: string;
+  /**
+   * The room's "home" host: set on creation and on hand-over, untouched by
+   * election. When they come back (e.g. after a refresh) they get the crown back.
+   * Missing on states from older clients.
+   */
+  ownerId?: string;
   roundId: string;
   deck: DeckId;
   revealed: boolean;
@@ -69,7 +84,7 @@ interface Transport {
   close(): void;
 }
 
-const EVENTS = ["state", "request-state", "fx"] as const;
+const EVENTS = ["state", "request-state", "vote", "fx"] as const;
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -98,6 +113,22 @@ function createSupabaseTransport(
   });
   let subscribed = false;
   let pending: Participant | null = null;
+  let lastTrack = 0;
+  let trackTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Presence is rate-limited server-side: rapid re-tracks get coalesced or even
+  // dropped. Votes travel by broadcast, so presence only needs the final value.
+  const flushTrack = () => {
+    trackTimer = null;
+    if (!subscribed || !pending) return;
+    lastTrack = Date.now();
+    void ch.track(pending);
+  };
+  const scheduleTrack = () => {
+    if (trackTimer) return;
+    const wait = Math.max(0, lastTrack + TRACK_INTERVAL_MS - Date.now());
+    trackTimer = setTimeout(flushTrack, wait);
+  };
 
   ch.on("presence", { event: "sync" }, () => {
     const state = ch.presenceState<Participant>();
@@ -111,7 +142,7 @@ function createSupabaseTransport(
     if (status === "SUBSCRIBED") {
       subscribed = true;
       h.onStatus("online");
-      if (pending) void ch.track(pending);
+      scheduleTrack();
     } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
       h.onStatus("error");
     }
@@ -120,13 +151,14 @@ function createSupabaseTransport(
   return {
     track(p) {
       pending = p;
-      if (subscribed) void ch.track(p);
+      if (subscribed) scheduleTrack();
     },
     send(event, payload) {
       if (subscribed) void ch.send({ type: "broadcast", event, payload });
     },
     close() {
       subscribed = false;
+      if (trackTimer) clearTimeout(trackTimer);
       void client.removeChannel(ch);
     },
   };
@@ -243,6 +275,7 @@ function initialState(hostId: string): RoomState {
     version: 0,
     updatedAt: Date.now(),
     hostId,
+    ownerId: hostId,
     roundId: newRoundId(),
     deck: "story",
     revealed: false,
@@ -269,36 +302,63 @@ function sessionNumber(key: string, fallback: () => number): number {
   }
 }
 
-function readVote(roomId: string): {
-  vote: string | null;
-  voteRound: string | null;
-} {
-  if (typeof window === "undefined") return { vote: null, voteRound: null };
+const NO_BALLOT: Ballot = { vote: null, voteRound: null, voteAt: 0 };
+
+function readVote(roomId: string): Ballot {
+  if (typeof window === "undefined") return NO_BALLOT;
   try {
     const raw = sessionStorage.getItem(`klara.vote.${roomId}`);
-    if (raw) return JSON.parse(raw);
+    if (raw) return { ...NO_BALLOT, ...JSON.parse(raw) };
   } catch {
     /* ignore */
   }
-  return { vote: null, voteRound: null };
+  return NO_BALLOT;
 }
 
-function writeVote(
-  roomId: string,
-  vote: string | null,
-  voteRound: string | null,
-) {
+function writeVote(roomId: string, ballot: Ballot) {
   try {
-    sessionStorage.setItem(
-      `klara.vote.${roomId}`,
-      JSON.stringify({ vote, voteRound }),
-    );
+    sessionStorage.setItem(`klara.vote.${roomId}`, JSON.stringify(ballot));
   } catch {
     /* ignore */
   }
 }
 
-const HOST_GRACE_MS = 3500;
+function parseVote(payload: unknown): (Ballot & { id: string }) | null {
+  const v = payload as Partial<Ballot & { id: string }> | null;
+  if (!v || typeof v.id !== "string" || typeof v.voteAt !== "number")
+    return null;
+  const str = (x: unknown) => (typeof x === "string" ? x.slice(0, 32) : null);
+  return {
+    id: v.id,
+    vote: str(v.vote),
+    voteRound: str(v.voteRound),
+    voteAt: v.voteAt,
+  };
+}
+
+/**
+ * Presence with the freshest known votes on top: my own record is always
+ * authoritative, and a broadcast vote beats a presence vote that's older.
+ */
+function mergeVotes(
+  list: Participant[],
+  overlay: Map<string, Ballot>,
+  me: Participant | null,
+): Participant[] {
+  const merged = list.map((p) => {
+    if (me && p.id === me.id) return { ...p, ...me };
+    const b = overlay.get(p.id);
+    if (!b || b.voteAt <= (p.voteAt ?? 0)) return p;
+    return { ...p, ...b, vote: p.role === "voter" ? b.vote : null };
+  });
+  // My own presence echo can lag behind joining; show me right away.
+  if (me && !merged.some((p) => p.id === me.id)) merged.push(me);
+  return merged;
+}
+
+/** Long enough to cover a refresh: page load, reconnect, and presence lag. */
+const HOST_GRACE_MS = 8000;
+const TRACK_INTERVAL_MS = 400;
 const CONNECT_TIMEOUT_MS = 12000;
 const LEAVE_TOAST_DELAY_MS = 2500;
 
@@ -306,7 +366,10 @@ const LEAVE_TOAST_DELAY_MS = 2500;
 
 export function useRoom(roomId: string, identity: Identity | null) {
   const [status, setStatus] = useState<ConnStatus>("connecting");
-  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [presence, setPresence] = useState<Participant[]>([]);
+  const [overlay, setOverlay] = useState<Map<string, Ballot>>(
+    () => new Map(),
+  );
   const [state, setState] = useState<RoomState | null>(null);
   const [ballot, setBallot] = useState(() => readVote(roomId));
   const [joinedAt] = useState(() =>
@@ -317,7 +380,9 @@ export function useRoom(roomId: string, identity: Identity | null) {
   const fxListeners = useRef(new Set<(fx: Fx) => void>());
   const [fxLimiter] = useState(() => createRateLimiter(8, 4000));
   const stateRef = useRef<RoomState | null>(null);
+  /** Raw presence list; use `merged()` when votes matter. */
   const participantsRef = useRef<Participant[]>([]);
+  const overlayRef = useRef(new Map<string, Ballot>());
   const meRef = useRef<Participant | null>(null);
 
   const myId = identity?.id ?? null;
@@ -335,9 +400,20 @@ export function useRoom(roomId: string, identity: Identity | null) {
             joinedAt,
             vote: identity.role === "voter" ? ballot.vote : null,
             voteRound: ballot.voteRound,
+            voteAt: ballot.voteAt,
           }
         : null,
     [identity, joinedAt, ballot],
+  );
+
+  const participants = useMemo(
+    () => mergeVotes(presence, overlay, me),
+    [presence, overlay, me],
+  );
+  const merged = useCallback(
+    () =>
+      mergeVotes(participantsRef.current, overlayRef.current, meRef.current),
+    [],
   );
 
   const applyState = useCallback((incoming: RoomState) => {
@@ -382,6 +458,7 @@ export function useRoom(roomId: string, identity: Identity | null) {
         setStatus(s);
         if (s !== "online") return;
         t.send("request-state", { from: myId });
+        sendMyVote();
         // Only once connected: if nobody answers with state, this is a fresh room.
         // (Before, an unreachable server made us invent an empty offline room.)
         if (!bootTimers.length) {
@@ -419,26 +496,45 @@ export function useRoom(roomId: string, identity: Identity | null) {
         known = ids;
 
         participantsRef.current = list;
-        setParticipants(list);
+        setPresence(list);
+        for (const id of overlayRef.current.keys())
+          if (!ids.has(id)) overlayRef.current.delete(id);
 
-        // Late joiners get the full current state from the host.
+        // Late joiners get the full current state from the host, and my vote from me.
         const s = stateRef.current;
         if (fresh.length && s && s.hostId === myId) t.send("state", s);
+        if (fresh.length) sendMyVote();
       },
       onMessage(event, payload) {
         if (event === "fx") {
           const fx = parseFx(payload);
           if (fx) fxListeners.current.forEach((l) => l(fx));
+        } else if (event === "vote") {
+          const v = parseVote(payload);
+          if (!v || v.id === myId) return;
+          const prev = overlayRef.current.get(v.id);
+          if (prev && prev.voteAt >= v.voteAt) return;
+          const next = new Map(overlayRef.current);
+          next.set(v.id, {
+            vote: v.vote,
+            voteRound: v.voteRound,
+            voteAt: v.voteAt,
+          });
+          overlayRef.current = next;
+          setOverlay(next);
         } else if (event === "state") {
           applyState(payload as RoomState);
         } else if (event === "request-state") {
           const s = stateRef.current;
           if (!s) return;
+          const from = (payload as { from?: unknown } | null)?.from;
           const hostHere = participantsRef.current.some(
             (p) => p.id === s.hostId,
           );
+          // The host itself asking (it refreshed and lost its state) counts as
+          // "no host": presence may still list its old connection.
           if (s.hostId === myId) t.send("state", s);
-          else if (!hostHere)
+          else if (!hostHere || from === s.hostId)
             setTimeout(
               () => t.send("state", stateRef.current),
               Math.random() * 400,
@@ -453,6 +549,18 @@ export function useRoom(roomId: string, identity: Identity | null) {
         : createLocalTransport(roomId, myId, handlers);
     transport.current = t;
     if (meRef.current) t.track(meRef.current);
+
+    // Votes go by broadcast too: presence is rate-limited and lags by seconds.
+    function sendMyVote() {
+      const m = meRef.current;
+      if (m?.role === "voter" && m.voteAt)
+        t.send("vote", {
+          id: m.id,
+          vote: m.vote,
+          voteRound: m.voteRound,
+          voteAt: m.voteAt,
+        });
+    }
 
     // Nobody answered with state → this is a fresh room; whoever is first becomes host.
     const bootstrap = (force: boolean) => {
@@ -469,7 +577,9 @@ export function useRoom(roomId: string, identity: Identity | null) {
       t.close();
       transport.current = null;
       participantsRef.current = [];
-      setParticipants([]);
+      overlayRef.current = new Map();
+      setPresence([]);
+      setOverlay(new Map());
       setStatus("connecting");
     };
   }, [connected, myId, roomId, applyState]);
@@ -480,16 +590,12 @@ export function useRoom(roomId: string, identity: Identity | null) {
     if (me) transport.current?.track(me);
   }, [me]);
 
-  useEffect(
-    () => writeVote(roomId, ballot.vote, ballot.voteRound),
-    [roomId, ballot],
-  );
+  useEffect(() => writeVote(roomId, ballot), [roomId, ballot]);
 
   // Host left: after a grace period (refreshes), the longest-connected voter takes over.
-  const hostPresent =
-    !!state && participants.some((p) => p.id === state.hostId);
+  const hostPresent = !!state && presence.some((p) => p.id === state.hostId);
   useEffect(() => {
-    if (!state || hostPresent || participants.length === 0) return;
+    if (!state || hostPresent || presence.length === 0) return;
     const timer = setTimeout(() => {
       const s = stateRef.current;
       const list = participantsRef.current;
@@ -497,7 +603,29 @@ export function useRoom(roomId: string, identity: Identity | null) {
       if (electHost(list) === myId) commit(() => ({ hostId: myId! }));
     }, HOST_GRACE_MS);
     return () => clearTimeout(timer);
-  }, [hostPresent, participants, state, myId, commit]);
+  }, [hostPresent, presence, state, myId, commit]);
+
+  // The home host is back (refresh, reconnect): an elected stand-in hands the crown back.
+  const ownerId = state?.ownerId;
+  const ownerBack =
+    !!state &&
+    !!ownerId &&
+    state.hostId === myId &&
+    ownerId !== myId &&
+    presence.some((p) => p.id === ownerId);
+  useEffect(() => {
+    if (!ownerBack || !ownerId) return;
+    const timer = setTimeout(() => {
+      const s = stateRef.current;
+      if (
+        s?.hostId === myId &&
+        s.ownerId === ownerId &&
+        participantsRef.current.some((p) => p.id === ownerId)
+      )
+        commit(() => ({ hostId: ownerId }));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [ownerBack, ownerId, myId, commit]);
 
   const isHost = !!state && state.hostId === myId;
 
@@ -510,14 +638,14 @@ export function useRoom(roomId: string, identity: Identity | null) {
     const s = stateRef.current!;
     const votes: VoteMap = {};
     const names: Record<string, string> = {};
-    for (const p of participantsRef.current) {
+    for (const p of merged()) {
       if (p.role === "voter" && p.vote && p.voteRound === s.roundId) {
         votes[p.id] = p.vote;
         names[p.id] = p.name;
       }
     }
     return { votes, names };
-  }, []);
+  }, [merged]);
 
   const reveal = useCallback(async () => {
     const s = stateRef.current;
@@ -580,7 +708,7 @@ export function useRoom(roomId: string, identity: Identity | null) {
     [commit],
   );
   const handOver = useCallback(
-    (id: string) => commit(() => ({ hostId: id })),
+    (id: string) => commit(() => ({ hostId: id, ownerId: id })),
     [commit],
   );
 
@@ -608,20 +736,27 @@ export function useRoom(roomId: string, identity: Identity | null) {
     };
   }, []);
 
+  /** Set my ballot and broadcast it right away (presence follows, slower). */
+  const cast = useCallback(
+    (vote: string | null, voteRound: string | null) => {
+      const next: Ballot = { vote, voteRound, voteAt: Date.now() };
+      setBallot(next);
+      if (myId) transport.current?.send("vote", { id: myId, ...next });
+    },
+    [myId],
+  );
+
   const vote = useCallback(
     (value: string | null) => {
       const s = stateRef.current;
       if (!s || s.revealed || identity?.role !== "voter") return;
-      setBallot({ vote: value, voteRound: value ? s.roundId : null });
+      cast(value, value ? s.roundId : null);
     },
-    [identity?.role],
+    [identity?.role, cast],
   );
 
   /** Switching to spectator takes your card off the table for good. */
-  const withdraw = useCallback(
-    () => setBallot({ vote: null, voteRound: null }),
-    [],
-  );
+  const withdraw = useCallback(() => cast(null, null), [cast]);
 
   /* --------------------------------------------------------- derived data */
 
