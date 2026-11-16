@@ -96,8 +96,12 @@ export function PokerTable({
 
   return (
     <section aria-label="Poker table" className="w-full">
-      {/* Desktop / tablet: wide table with seats around it */}
-      <div className="relative mx-auto hidden w-full max-w-[1240px] md:block md:aspect-[1.6/1] lg:aspect-[1.9/1] xl:aspect-[2.1/1]">
+      {/* Desktop / tablet: wide table with seats around it. Its width is capped by
+          the viewport height so the table, the card dock and the start of the
+          results all fit on short laptop screens; the side padding keeps the
+          outermost seats' name labels from overflowing the page. */}
+      <div className="mx-auto hidden w-[min(100%,calc(max(22rem,100dvh-19rem)*var(--table-ratio)+7rem))] max-w-[1240px] px-14 [--table-ratio:1.6] md:block lg:[--table-ratio:1.9] xl:[--table-ratio:2.1]">
+      <div className="relative aspect-[var(--table-ratio)] w-full">
         <div className="table-surface absolute inset-x-[7%] inset-y-[15%] rounded-full" />
         <div className="absolute inset-x-[25%] inset-y-[31%] grid place-items-center">
           {center}
@@ -150,6 +154,7 @@ export function PokerTable({
             );
           })}
         </AnimatePresence>
+      </div>
       </div>
 
       {/* Mobile: compact table summary + participant list */}
