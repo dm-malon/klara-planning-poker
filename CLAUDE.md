@@ -17,6 +17,9 @@ There's no test suite yet. Check behaviour by opening one room in several tabs.
 ## Architecture
 
 - **No database, no server state.** Each room is a Realtime channel `klara-poker:<roomId>`.
+  Every client keeps its last `RoomState` in localStorage (`klara.room.<roomId>`, 12h TTL). If
+  everyone reloads at once and nobody answers `request-state`, bootstrap restores that copy
+  (same host, history and round) and broadcasts it, instead of starting a fresh room.
   - Presence carries each `Participant` (`id, name, icon, role, joinedAt`), **without votes**.
     `icon` must be one of `AVATAR_ICONS` in `lib/avatar.ts`; anything else renders as initials.
     Supabase closes a client's channel after ~5 presence updates in a short window ("Client

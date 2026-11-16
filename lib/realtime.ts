@@ -360,6 +360,39 @@ function sessionNumber(key: string, fallback: () => number): number {
   }
 }
 
+/** Last known room state, kept so a room survives everyone reloading at once. */
+const ROOM_TTL_MS = 12 * 60 * 60 * 1000;
+
+function saveRoom(roomId: string, state: RoomState) {
+  try {
+    localStorage.setItem(`klara.room.${roomId}`, JSON.stringify(state));
+  } catch {
+    /* ignore */
+  }
+}
+
+function loadRoom(roomId: string): RoomState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(`klara.room.${roomId}`);
+    if (!raw) return null;
+    const s = JSON.parse(raw) as RoomState;
+    const valid =
+      typeof s?.version === "number" &&
+      typeof s.updatedAt === "number" &&
+      typeof s.hostId === "string" &&
+      typeof s.roundId === "string" &&
+      Array.isArray(s.history);
+    if (!valid || Date.now() - s.updatedAt > ROOM_TTL_MS) {
+      localStorage.removeItem(`klara.room.${roomId}`);
+      return null;
+    }
+    return s;
+  } catch {
+    return null;
+  }
+}
+
 const NO_BALLOT: Ballot = { vote: null, voteRound: null, voteAt: 0 };
 
 function readVote(roomId: string): Ballot {
@@ -598,8 +631,10 @@ export function useRoom(roomId: string, identity: Identity | null) {
           );
           // The host itself asking (it refreshed and lost its state) counts as
           // "no host": presence may still list its old connection.
-          if (s.hostId === myId) t.send("state", s);
-          else if (!hostHere || from === s.hostId)
+          // The host asking is answered at once: it may be one of several tabs
+          // reloading together, and a delayed reply dies with an unloading page.
+          if (s.hostId === myId || from === s.hostId) t.send("state", s);
+          else if (!hostHere)
             setTimeout(
               () => t.send("state", stateRef.current),
               Math.random() * 400,
@@ -632,7 +667,11 @@ export function useRoom(roomId: string, identity: Identity | null) {
       if (stateRef.current) return;
       const others = participantsRef.current.filter((p) => p.id !== myId);
       if (!force && others.length) return;
-      applyState(initialState(myId));
+      // Everyone reloaded at once, so nobody holds the state in memory: pick up
+      // this browser's last copy (same host, history and round) and share it.
+      const saved = loadRoom(roomId);
+      applyState(saved ?? initialState(myId));
+      if (saved) t.send("state", saved);
     };
 
     return () => {
@@ -657,6 +696,9 @@ export function useRoom(roomId: string, identity: Identity | null) {
   }, [me]);
 
   useEffect(() => writeVote(roomId, ballot), [roomId, ballot]);
+  useEffect(() => {
+    if (state) saveRoom(roomId, state);
+  }, [roomId, state]);
 
   // Host left: after a grace period (refreshes), the longest-connected voter takes over.
   const hostPresent = !!state && presence.some((p) => p.id === state.hostId);
