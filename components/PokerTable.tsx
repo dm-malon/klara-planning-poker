@@ -1,9 +1,9 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { DECKS, findCard } from "@/lib/decks";
+import { DECKS, findCard, formatValue, suggestsCard } from "@/lib/decks";
 import type { Participant, RoomState } from "@/lib/realtime";
-import { formatNumber, type RoundResult } from "@/lib/stats";
+import type { RoundResult } from "@/lib/stats";
 import { Avatar } from "./Avatar";
 import { PersonMenu, type PersonActions } from "./PersonMenu";
 import { SeatCard } from "./PlayingCard";
@@ -101,60 +101,60 @@ export function PokerTable({
           results all fit on short laptop screens; the side padding keeps the
           outermost seats' name labels from overflowing the page. */}
       <div className="mx-auto hidden w-[min(100%,calc(max(22rem,100dvh-19rem)*var(--table-ratio)+7rem))] max-w-[1240px] px-14 [--table-ratio:1.6] md:block lg:[--table-ratio:1.9] xl:[--table-ratio:2.1]">
-      <div className="relative aspect-[var(--table-ratio)] w-full">
-        <div className="table-surface absolute inset-x-[7%] inset-y-[15%] rounded-full" />
-        <div className="absolute inset-x-[25%] inset-y-[31%] grid place-items-center">
-          {center}
-        </div>
+        <div className="relative aspect-[var(--table-ratio)] w-full">
+          <div className="table-surface absolute inset-x-[7%] inset-y-[15%] rounded-full" />
+          <div className="absolute inset-x-[25%] inset-y-[31%] grid place-items-center">
+            {center}
+          </div>
 
-        <AnimatePresence>
-          {seats.map((s, i) => {
-            const angle =
-              Math.PI / 2 + (i * 2 * Math.PI) / Math.max(seats.length, 1);
-            const card = seatPoint(angle, 34, 25);
-            const person = seatPoint(angle, 47.5, 43.5);
-            return (
-              <motion.div
-                key={s.p.id}
-                initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.7 }}
-                transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                className="pointer-events-none absolute inset-0"
-              >
+          <AnimatePresence>
+            {seats.map((s, i) => {
+              const angle =
+                Math.PI / 2 + (i * 2 * Math.PI) / Math.max(seats.length, 1);
+              const card = seatPoint(angle, 34, 25);
+              const person = seatPoint(angle, 47.5, 43.5);
+              return (
                 <motion.div
-                  className="absolute -translate-x-1/2 -translate-y-1/2"
-                  initial={false}
-                  animate={{ left: `${card.left}%`, top: `${card.top}%` }}
-                  transition={{ type: "spring", stiffness: 200, damping: 26 }}
+                  key={s.p.id}
+                  initial={{ opacity: 0, scale: 0.7 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.7 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 24 }}
+                  className="pointer-events-none absolute inset-0"
                 >
-                  <SeatCard
-                    voted={s.voted}
-                    revealed={state.revealed}
-                    label={s.label}
-                    tone={s.tone}
-                    delay={i * 0.06}
-                  />
+                  <motion.div
+                    className="absolute -translate-x-1/2 -translate-y-1/2"
+                    initial={false}
+                    animate={{ left: `${card.left}%`, top: `${card.top}%` }}
+                    transition={{ type: "spring", stiffness: 200, damping: 26 }}
+                  >
+                    <SeatCard
+                      voted={s.voted}
+                      revealed={state.revealed}
+                      label={s.label}
+                      tone={s.tone}
+                      delay={i * 0.06}
+                    />
+                  </motion.div>
+                  <motion.div
+                    className="absolute -translate-x-1/2 -translate-y-1/2"
+                    initial={false}
+                    animate={{ left: `${person.left}%`, top: `${person.top}%` }}
+                    transition={{ type: "spring", stiffness: 200, damping: 26 }}
+                  >
+                    <SeatPerson
+                      info={s}
+                      isMe={s.p.id === myId}
+                      isHost={s.p.id === state.hostId}
+                      actions={actions}
+                      placement={person.top < 50 ? "below" : "above"}
+                    />
+                  </motion.div>
                 </motion.div>
-                <motion.div
-                  className="absolute -translate-x-1/2 -translate-y-1/2"
-                  initial={false}
-                  animate={{ left: `${person.left}%`, top: `${person.top}%` }}
-                  transition={{ type: "spring", stiffness: 200, damping: 26 }}
-                >
-                  <SeatPerson
-                    info={s}
-                    isMe={s.p.id === myId}
-                    isHost={s.p.id === state.hostId}
-                    actions={actions}
-                    placement={person.top < 50 ? "below" : "above"}
-                  />
-                </motion.div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-      </div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Mobile: compact table summary + participant list */}
@@ -363,7 +363,7 @@ function TableCenter({
       {state.revealed && result ? (
         <div className="flex flex-col items-center">
           <span className="text-[11px] font-semibold tracking-[0.2em] text-muted uppercase">
-            {deck.id === "story" ? "Suggested" : "Average"}
+            {suggestsCard(deck.id) ? "Suggested" : "Average"}
           </span>
           <motion.span
             key={state.roundId}
@@ -377,11 +377,9 @@ function TableCenter({
             }}
             className="text-gradient font-display text-5xl leading-none font-bold tracking-tight lg:text-6xl"
           >
-            {deck.id === "story"
-              ? (findCard("story", result.suggested)?.label ?? "—")
-              : result.average !== null
-                ? `${formatNumber(result.average)}h`
-                : "—"}
+            {suggestsCard(deck.id)
+              ? (findCard(deck.id, result.suggested)?.label ?? "—")
+              : formatValue(deck.id, result.average)}
           </motion.span>
         </div>
       ) : (

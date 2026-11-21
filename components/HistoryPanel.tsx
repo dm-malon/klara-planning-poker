@@ -2,16 +2,12 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
-import { DECKS, findCard } from "@/lib/decks";
+import { DECKS, resultSummary } from "@/lib/decks";
 import { OUTCOME_LABEL } from "@/lib/memes";
 import type { HistoryEntry } from "@/lib/realtime";
-import { formatNumber } from "@/lib/stats";
 
 function resultText(h: HistoryEntry): string {
-  if (h.average === null) return "no numbers";
-  if (h.deck === "story")
-    return `${findCard("story", h.suggested)?.label ?? "—"} SP`;
-  return `${formatNumber(h.average)}h ≈ ${formatNumber(Math.round((h.days ?? 0) * 10) / 10)}d`;
+  return resultSummary(h.deck, h.suggested, h.average) ?? "no numbers";
 }
 
 export function HistoryPanel({

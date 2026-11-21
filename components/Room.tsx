@@ -3,7 +3,7 @@
 import confetti from "canvas-confetti";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { DECKS, findCard } from "@/lib/decks";
+import { DECKS, findCard, resultSummary } from "@/lib/decks";
 import {
   loadIdentity,
   saveIdentity,
@@ -11,7 +11,7 @@ import {
   type Role,
 } from "@/lib/identity";
 import { realtimeMode, useRoom } from "@/lib/realtime";
-import { computeResult, formatNumber } from "@/lib/stats";
+import { computeResult } from "@/lib/stats";
 import { toast } from "@/lib/toast";
 import { CardHand, shortcutFor } from "./CardHand";
 import { FxLayer } from "./FxLayer";
@@ -108,11 +108,7 @@ export function Room({ roomId }: { roomId: string }) {
   useEffect(() => {
     let prefix = "";
     if (state?.revealed && result) {
-      const value =
-        state.deck === "story"
-          ? findCard("story", result.suggested)?.label &&
-            `${findCard("story", result.suggested)!.label} SP`
-          : result.average !== null && `${formatNumber(result.average)}h`;
+      const value = resultSummary(state.deck, result.suggested, result.average);
       prefix = `✅ ${value || "Revealed"} · `;
     } else if (state && voterCount > 0) {
       prefix = `(${votedCount}/${voterCount}) `;

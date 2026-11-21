@@ -27,7 +27,7 @@ export interface RoundResult {
   max: number | null;
   /** Card-step distance between min and max numeric votes. */
   spread: number;
-  /** Story points: nearest deck card to the average. */
+  /** Story points and sizes: nearest deck card to the average. */
   suggested: string | null;
   /** Hourly: average expressed in 8h days. */
   days: number | null;
@@ -67,7 +67,7 @@ export function computeResult(deckId: DeckId, votes: VoteMap): RoundResult {
   const spread = steps.length ? Math.max(...steps) - Math.min(...steps) : 0;
 
   let suggested: string | null = null;
-  if (deckId === "story" && average !== null) {
+  if (deck.scale !== "hours" && average !== null) {
     let best = numCards[0];
     for (const c of numCards) {
       const d = Math.abs(c.numeric! - average);
@@ -79,7 +79,7 @@ export function computeResult(deckId: DeckId, votes: VoteMap): RoundResult {
   }
 
   const days =
-    deckId === "hourly" && average !== null ? average / HOURS_PER_DAY : null;
+    deck.scale === "hours" && average !== null ? average / HOURS_PER_DAY : null;
 
   const distribution = deck.cards
     .map((c) => ({
@@ -128,9 +128,9 @@ function classify(
   if (values.some((v) => v === COFFEE)) return "coffee";
   if (nums.length === 0) return "unknown";
   if (spread === 0) return "consensus";
-  const max = nums[nums.length - 1];
-  if (deckId === "story" ? max >= 21 : max >= 40) return "huge";
-  if (nums.every((n) => (deckId === "story" ? n <= 1 : n <= 2))) return "tiny";
+  const { hugeAt, tinyAt } = DECKS[deckId];
+  if (nums[nums.length - 1] >= hugeAt) return "huge";
+  if (nums.every((n) => n <= tinyAt)) return "tiny";
   if (spread >= 3) return "disagreement";
   if (spread <= 1) return "near";
   return "mixed";
