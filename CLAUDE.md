@@ -50,7 +50,9 @@ There's no test suite yet. Check behaviour by opening one room in several tabs.
 
 - `lib/realtime.ts`: transports and the `useRoom` hook (state, presence, actions)
 - `lib/stats.ts`: `computeResult()` and outcome classification (rule order matters)
-- `lib/decks.ts`: deck definitions (`value` goes over the wire, `label` is displayed)
+- `lib/decks.ts`: deck definitions (`value` goes over the wire, `label` is displayed). Story points,
+  Hourly and T-shirt (XS–XL+, ordinal 1–6). Deck-specific display goes through `formatValue()`,
+  `resultSummary()` and `suggestsCard()`, not `deck.id` checks in components.
 - `lib/memes.ts`, `app/api/meme/route.ts`: meme pools, fallback cards and the GIPHY proxy
 - `lib/identity.ts`: client id, name and role in browser storage
 - `components/Room.tsx`: page orchestrator, keyboard shortcuts, confetti

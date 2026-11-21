@@ -83,7 +83,9 @@ export function RoomHeader({
               onClick={copyLink}
               aria-live="polite"
               className={`h-7 min-w-[7.5rem] rounded-full px-3 font-sans text-xs font-semibold transition ${
-                copied ? "bg-good text-white" : "bg-text text-surface hover:opacity-85"
+                copied
+                  ? "bg-good text-white"
+                  : "bg-text text-surface hover:opacity-85"
               }`}
             >
               {copied ? "Copied ✓" : "Copy invite link"}
@@ -94,7 +96,7 @@ export function RoomHeader({
               className="inline-flex h-9 items-center gap-1.5 rounded-full bg-accent-soft px-3 text-xs font-semibold text-accent"
               aria-label={`Estimation mode: ${deck.name}`}
             >
-              <span aria-hidden>{deck.id === "story" ? "🃏" : "⏱"}</span>
+              <span aria-hidden>{deck.icon}</span>
               {deck.name}
             </span>
           )}

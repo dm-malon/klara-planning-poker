@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
-import { DECKS, findCard } from "@/lib/decks";
+import { DECKS, findCard, formatValue, suggestsCard } from "@/lib/decks";
 import { OUTCOME_LABEL } from "@/lib/memes";
 import type { RoomState } from "@/lib/realtime";
 import { formatNumber, type RoundResult } from "@/lib/stats";
@@ -54,10 +54,8 @@ export function Results({
 
   const names = state.voterNames ?? {};
   const votes = state.votes ?? {};
-  const unit = deck.id === "hourly" ? "h" : "";
   const maxCount = Math.max(1, ...result.distribution.map((d) => d.count));
-  const fmt = (n: number | null) =>
-    n === null ? "—" : `${formatNumber(n)}${unit}`;
+  const fmt = (n: number | null) => formatValue(deck.id, n);
 
   const outlierLine = (ids: string[]) =>
     ids.map((id) => names[id] ?? "Someone").join(", ");
@@ -86,10 +84,10 @@ export function Results({
       <div className="grid gap-6 lg:grid-cols-2">
         <div>
           <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {deck.id === "story" ? (
+            {suggestsCard(deck.id) ? (
               <Stat
                 label="Suggested"
-                value={findCard("story", result.suggested)?.label ?? "—"}
+                value={findCard(deck.id, result.suggested)?.label ?? "—"}
                 accent
               />
             ) : (
@@ -104,7 +102,8 @@ export function Results({
                 accent
               />
             )}
-            {deck.id === "story" && (
+            {/* A size average ("2.5") means nothing; sizes show the median instead. */}
+            {deck.scale === "points" && (
               <Stat label="Average" value={fmt(result.average)} />
             )}
             <Stat label="Median" value={fmt(result.median)} />
@@ -116,7 +115,7 @@ export function Results({
                   : `${fmt(result.min)} – ${fmt(result.max)}`
               }
             />
-            {deck.id === "hourly" && (
+            {deck.scale === "hours" && (
               <Stat
                 label="Days (8h)"
                 value={result.days === null ? "—" : formatNumber(result.days)}
